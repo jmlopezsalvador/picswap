@@ -22,6 +22,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,7 +47,13 @@ import kotlin.math.roundToInt
  * - El comportamiento del arrastre del objeto en el visor.
  */
 @Composable
-fun SettingsScreen(settings: AppSettings, onChange: (AppSettings) -> Unit, onBack: () -> Unit) {
+fun SettingsScreen(
+    settings: AppSettings,
+    onChange: (AppSettings) -> Unit,
+    onBack: () -> Unit,
+    onOpenInstructions: () -> Unit,
+    onShowGuide: () -> Unit,
+) {
     PlatformBackHandler(enabled = true, onBack = onBack)
     var editingPreset by remember { mutableStateOf<Int?>(null) }
     var edgeValue by remember(settings.drag.edgeDp) { mutableStateOf(settings.drag.edgeDp.toFloat()) }
@@ -129,6 +137,36 @@ fun SettingsScreen(settings: AppSettings, onChange: (AppSettings) -> Unit, onBac
                 title = "Acompañar",
                 subtitle = "Como pasar de foto en una galería: sigue al dedo y se va si el gesto es suficiente; si no, vuelve.",
             ) { onChange(settings.copy(drag = drag.copy(mode = DragMode.Follow))) }
+
+            Spacer(Modifier.height(26.dp))
+
+            // ---------- Ayuda ----------
+            SectionTitle("Ayuda")
+            Spacer(Modifier.height(6.dp))
+            LinkRow("Instrucciones", "Cómo usar la app paso a paso, con dibujos.", onOpenInstructions)
+            LinkRow("Ver la guía de inicio", "Un resumen rápido de cómo funciona.", onShowGuide)
+            Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f).padding(end = 12.dp)) {
+                    Text("Mostrar la guía al abrir la app", color = PicColors.TextPrimary, fontSize = 15.sp)
+                    Text("Si está activado, la guía de inicio aparece cada vez que se abre la app.", color = PicColors.TextSecondary, fontSize = 12.sp)
+                }
+                Switch(
+                    checked = settings.showGuide,
+                    onCheckedChange = { onChange(settings.copy(showGuide = it)) },
+                    colors = SwitchDefaults.colors(checkedTrackColor = PicColors.Accent, checkedThumbColor = Color.White),
+                )
+            }
+            Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f).padding(end = 12.dp)) {
+                    Text("Consejos antes de hacer una foto", color = PicColors.TextPrimary, fontSize = 15.sp)
+                    Text("Un aviso corto con indicaciones para que el recorte salga bien.", color = PicColors.TextSecondary, fontSize = 12.sp)
+                }
+                Switch(
+                    checked = settings.showPhotoTips,
+                    onCheckedChange = { onChange(settings.copy(showPhotoTips = it)) },
+                    colors = SwitchDefaults.colors(checkedTrackColor = PicColors.Accent, checkedThumbColor = Color.White),
+                )
+            }
         }
 
         Text(
@@ -180,5 +218,19 @@ private fun RadioRow(selected: Boolean, title: String, subtitle: String, onClick
             Text(title, color = PicColors.TextPrimary, fontSize = 15.sp)
             Text(subtitle, color = PicColors.TextSecondary, fontSize = 12.sp)
         }
+    }
+}
+
+@Composable
+private fun LinkRow(title: String, subtitle: String, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(10.dp)).clickable(onClick = onClick).padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = PicColors.TextPrimary, fontSize = 15.sp)
+            Text(subtitle, color = PicColors.TextSecondary, fontSize = 12.sp)
+        }
+        Text("›", color = PicColors.TextSecondary, fontSize = 22.sp)
     }
 }

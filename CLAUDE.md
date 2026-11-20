@@ -37,10 +37,11 @@ el fondo plano, como si lo hubiera sacado del móvil. Detalle completo en `docs/
   «Restaurar original» si ya está recortada).
 - «Quitar fondo» abre un editor por foto (vista previa en vivo): color de relleno, tolerancia y cuentagotas. Procesado
   propio sin IA. Se guarda original `.jpg` + recorte `.png` con alfa + color `.bg`; la app pinta el color debajo.
-- Visor: pantalla completa; un toque alterna con modo normal (barra superior con flecha atrás e iconos de atrezo);
+- Visor: pantalla completa; zoom con pellizco (dos dedos sobre el objeto) y el arrastre solo empieza sobre el objeto visible (alfa > 128), no sobre la transparencia; un toque alterna con modo normal (barra superior con flecha atrás e iconos de atrezo);
   arrastre libre en cualquier dirección que deja solo el color de fondo de la foto.
 - Ajustes ocultos: pulsación larga en la esquina superior derecha de la galería: 4 colores de fondo editables (paleta), modo de arrastre (arrastrar y soltar [en cualquier momento / solo en el borde] o acompañar) y créditos de Wikicode.
-- Editor: los 4 colores vienen de los ajustes + un quinto botón con paleta para un color solo de esa foto.
+- Antes de abrir la cámara sale un aviso con consejos para la foto (superficie lisa, color distinto al objeto, luz uniforme); se puede desactivar.
+- Editor: tolerancia y desenfoque del borde (deslizadores), cuentagotas y los 4 colores vienen de los ajustes + un quinto botón con paleta para un color solo de esa foto.
 - Paquete `com.picswap`. Repo: https://github.com/jmlopezsalvador/picswap.git. Icono en `data/icon.png` (ya aplicado a Android e iOS; se regeneró con un script de Pillow).
 
 ## Reglas de código para que compile en iOS
@@ -76,8 +77,10 @@ el fondo plano, como si lo hubiera sacado del móvil. Detalle completo en `docs/
 - En iOS, `UIDevice.proximityState` se lee por sondeo; apagar y reactivar la monitorización deja el estado pegado. Mantenerla activa.
 - Barra de estado e indicador de inicio se ocultan desde SwiftUI (`ContentView.swift`); el bloqueo automático con `idleTimerDisabled`.
 
-## Instrucciones para el usuario (si la app las necesita)
-Si la app lleva una página de «Instrucciones» de cara al usuario final, mantenerla al día en la misma tarea en que se cambie la función.
+## Instrucciones para el usuario
+La app lleva una **guía de inicio** (`ui/GuideOverlay.kt`, pasos con dibujos) y una página de **Instrucciones** en los ajustes
+(`ui/InstructionsScreen.kt`). Los dibujos están en `ui/Illustrations.kt` (Canvas, sin imágenes). **Mantener los tres al día en la
+misma tarea en que se cambie una función** (textos y dibujos).
 
 ## Estado de las fases (ver `docs/SPEC.md` §5)
 - **Fase 1 hecha (Android verificado en emulador):** galería, añadir (galería/cámara), eliminar por pulsación larga, visor a pantalla completa con arrastre libre, ajustes ocultos (color de fondo).
@@ -87,5 +90,14 @@ Si la app lleva una página de «Instrucciones» de cara al usuario final, mante
   (los últimos usados se proponen por defecto).
 - **Colores y arrastre hechos (Android verificado):** colores predefinidos editables, color personalizado por foto y dos modos
   de arrastre (reglas puras en `domain/DragRules.kt`, color en `domain/ColorMath.kt`; el gesto en `ViewerScreen.kt`).
+- **Zoom y arrastre solo sobre el objeto hechos (Android parcialmente verificado):** el arrastre desde la transparencia se
+  ignora y desde el objeto funciona (probado en emulador). El **pellizco NO se pudo probar en el emulador** (ni `sendevent`
+  ni `adb emu event send` mueven el táctil): solo hay tests unitarios (`domain/ZoomAndHit.kt`) y revisión del código
+  (`ViewerScreen.kt`). Probar en un móvil real. El toque simple usa `tapWithoutDrag` (un arrastre no cuenta como toque).
+- **Desenfoque, guía de inicio e instrucciones hechos (Android verificado):** deslizador de desenfoque en el editor
+  (`feather` en `domain/BackgroundCutout.kt`, con tests y corrección del halo), guía de inicio al abrir la app, página de
+  instrucciones y ajustes de ayuda (interruptor de la guía). Falta probar en iPhone (código común, sin cambios de plataforma).
+- **Consejos de foto hechos (Android verificado):** aviso antes de la cámara (`GalleryScreen.kt`), paso nuevo en la guía y bloque
+  «Cómo hacer una buena foto» en las instrucciones; ajuste `showPhotoTips`.
 - **Siguiente:** validar con fotos reales del usuario; si no basta el recorte, segunda foto o IA (fase 3). Ajustar umbrales
-  del arrastre tras probar en móvil.
+  del arrastre tras probar en móvil. Probar el pellizco en un móvil real.

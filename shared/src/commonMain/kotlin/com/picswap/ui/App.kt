@@ -22,6 +22,7 @@ private sealed interface Screen {
     data class Viewer(val id: String) : Screen
     data class Editor(val id: String) : Screen
     data object Settings : Screen
+    data object Instructions : Screen
 }
 
 /** Lado mayor (px) con el que se guardan las fotos importadas y con el que se muestran a pantalla completa. */
@@ -43,6 +44,7 @@ fun PicSwapRoot(store: SettingsStore, photoFiles: PhotoFiles) {
     var imageVersion by remember { mutableStateOf(0) }  // sube al cambiar una imagen: recarga miniaturas y visor
     var screen by remember { mutableStateOf<Screen>(Screen.Gallery) }
     var immersive by remember { mutableStateOf(true) }
+    var showGuide by remember { mutableStateOf(settings.showGuide) }  // la guía de inicio, por encima de todo
     val scope = rememberCoroutineScope()
 
     val thumbCache = remember { HashMap<String, ImageBitmap>() }
@@ -95,6 +97,8 @@ fun PicSwapRoot(store: SettingsStore, photoFiles: PhotoFiles) {
                 },
                 onPickFromGallery = picker::pickFromGallery,
                 onTakePhoto = picker::takePhoto,
+                showPhotoTips = settings.showPhotoTips,
+                onPhotoTipsChange = { settings = settings.copy(showPhotoTips = it).also(store::save) },
                 onOpenSettings = { screen = Screen.Settings },
             )
             is Screen.Viewer -> {
@@ -114,6 +118,7 @@ fun PicSwapRoot(store: SettingsStore, photoFiles: PhotoFiles) {
                 presets = settings.presets,
                 initialColor = settings.lastColor,
                 initialTolerance = settings.lastTolerance,
+                initialFeather = settings.lastFeather,
                 loadOriginal = { maxSize ->
                     withContext(Dispatchers.Default) { repo.bytes(s.id)?.let { decodeImage(it, maxSize) } }
                 },
@@ -127,7 +132,7 @@ fun PicSwapRoot(store: SettingsStore, photoFiles: PhotoFiles) {
                         bgColors = bgColors + (s.id to params.color)
                         thumbCache.remove(s.id)
                         imageVersion++
-                        settings = settings.copy(lastColor = params.color, lastTolerance = params.tolerance)
+                        settings = settings.copy(lastColor = params.color, lastTolerance = params.tolerance, lastFeather = params.feather)
                             .also(store::save)
                     }
                     screen = Screen.Gallery
@@ -138,6 +143,19 @@ fun PicSwapRoot(store: SettingsStore, photoFiles: PhotoFiles) {
                 settings = settings,
                 onChange = { settings = it; store.save(it) },
                 onBack = { screen = Screen.Gallery },
+                onOpenInstructions = { screen = Screen.Instructions },
+                onShowGuide = { showGuide = true },
+            )
+            Screen.Instructions -> InstructionsScreen(onBack = { screen = Screen.Settings })
+        }
+
+        if (showGuide) {
+            GuideOverlay(
+                showAtStart = settings.showGuide,
+                onClose = { show ->
+                    settings = settings.copy(showGuide = show).also(store::save)
+                    showGuide = false
+                },
             )
         }
     }

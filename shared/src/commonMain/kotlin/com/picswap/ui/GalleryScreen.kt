@@ -28,6 +28,8 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -70,11 +72,15 @@ fun GalleryScreen(
     onRestoreOriginal: (String) -> Unit,
     onPickFromGallery: () -> Unit,
     onTakePhoto: () -> Unit,
+    showPhotoTips: Boolean,
+    onPhotoTipsChange: (Boolean) -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     var selected by remember { mutableStateOf(emptySet<String>()) }
     var showAdd by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var showTips by remember { mutableStateOf(false) }
+    var tipsDontShowAgain by remember { mutableStateOf(false) }
     var confirmRestore by remember { mutableStateOf(false) }
     val selecting = selected.isNotEmpty()
     val single = selected.singleOrNull()
@@ -195,12 +201,50 @@ fun GalleryScreen(
             title = { Text("Añadir foto", color = PicColors.TextPrimary) },
             text = {
                 Column {
-                    DialogOption("Hacer una foto") { showAdd = false; onTakePhoto() }
+                    DialogOption("Hacer una foto") {
+                        showAdd = false
+                        if (showPhotoTips) { tipsDontShowAgain = false; showTips = true } else onTakePhoto()
+                    }
                     DialogOption("Elegir de la galería del móvil") { showAdd = false; onPickFromGallery() }
                 }
             },
             confirmButton = {},
             dismissButton = { TextButton({ showAdd = false }) { Text("Cancelar", color = PicColors.Accent) } },
+        )
+    }
+
+    if (showTips) {
+        AlertDialog(
+            onDismissRequest = { showTips = false },
+            containerColor = PicColors.Surface,
+            title = { Text("Para un buen recorte", color = PicColors.TextPrimary) },
+            text = {
+                Column {
+                    Illustration(Art.PhotoTips, height = 120.dp)
+                    Spacer(Modifier.height(12.dp))
+                    PhotoTip("Superficie lisa y de un solo color.")
+                    PhotoTip("Color muy distinto al del objeto (papel claro sobre fondo oscuro, o al revés).")
+                    PhotoTip("Luz uniforme: sin sombras duras ni reflejos.")
+                    PhotoTip("Móvil quieto y objeto bien encuadrado.")
+                    Spacer(Modifier.height(6.dp))
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("No volver a mostrar", color = PicColors.TextSecondary, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                        Switch(
+                            checked = tipsDontShowAgain,
+                            onCheckedChange = { tipsDontShowAgain = it },
+                            colors = SwitchDefaults.colors(checkedTrackColor = PicColors.Accent, checkedThumbColor = Color.White),
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton({
+                    showTips = false
+                    if (tipsDontShowAgain) onPhotoTipsChange(false)
+                    onTakePhoto()
+                }) { Text("Hacer foto", color = PicColors.Accent) }
+            },
+            dismissButton = { TextButton({ showTips = false }) { Text("Cancelar", color = PicColors.Accent) } },
         )
     }
 
@@ -237,6 +281,14 @@ fun GalleryScreen(
             },
             dismissButton = { TextButton({ confirmRestore = false }) { Text("Cancelar", color = PicColors.Accent) } },
         )
+    }
+}
+
+@Composable
+private fun PhotoTip(text: String) {
+    Row(Modifier.padding(bottom = 6.dp)) {
+        Text("•", color = PicColors.Accent, fontSize = 14.sp, modifier = Modifier.padding(end = 8.dp))
+        Text(text, color = PicColors.TextPrimary, fontSize = 14.sp, lineHeight = 19.sp)
     }
 }
 

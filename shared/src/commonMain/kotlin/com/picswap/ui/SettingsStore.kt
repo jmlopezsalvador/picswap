@@ -27,6 +27,11 @@ data class AppSettings(
     val drag: DragSettings = DragSettings(),
     val lastColor: Long = 0xFF000000L,
     val lastTolerance: Int = 40,
+    val lastFeather: Int = 10,
+    /** Mostrar la guía de inicio al abrir la app. */
+    val showGuide: Boolean = true,
+    /** Mostrar los consejos antes de hacer una foto con la cámara. */
+    val showPhotoTips: Boolean = true,
 )
 
 class SettingsStore(private val prefs: KeyValueStore) {
@@ -39,6 +44,9 @@ class SettingsStore(private val prefs: KeyValueStore) {
         ),
         lastColor = prefs.getLong("bgColor", 0xFF000000L),
         lastTolerance = prefs.getLong("tolerance", 40L).toInt(),
+        lastFeather = prefs.getLong("feather", 10L).toInt(),
+        showGuide = prefs.getBoolean("showGuide", true),
+        showPhotoTips = prefs.getBoolean("photoTips", true),
     )
 
     fun save(s: AppSettings) {
@@ -48,5 +56,8 @@ class SettingsStore(private val prefs: KeyValueStore) {
         prefs.putLong("dragEdgeDp", s.drag.edgeDp.toLong())
         prefs.putLong("bgColor", s.lastColor)
         prefs.putLong("tolerance", s.lastTolerance.toLong())
+        prefs.putLong("feather", s.lastFeather.toLong())
+        prefs.putBoolean("showGuide", s.showGuide)
+        prefs.putBoolean("photoTips", s.showPhotoTips)
     }
 }

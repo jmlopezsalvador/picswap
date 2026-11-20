@@ -16,16 +16,30 @@ Plataformas: Android + iOS (un único código). Solo vertical. Idioma: español.
 - R3. Barra superior con algún botón decorativo que **no hace nada** (solo atrezo).
 - R4. **Añadir** foto: botón que ofrece *hacer una foto* o *elegir de la galería del móvil*. La imagen se copia al
   almacenamiento interno de la app **tal cual, sin procesar** (el fondo original se conserva).
+- R4b. **Consejos antes de hacer una foto**: al elegir «Hacer una foto» aparece un aviso corto, «Para un buen recorte»,
+  con un dibujo bueno/malo y cuatro consejos: superficie lisa y de un solo color; color muy distinto al del objeto; luz
+  uniforme sin sombras duras ni reflejos; móvil quieto y objeto bien encuadrado. Botones «Cancelar» / «Hacer foto» e
+  interruptor «No volver a mostrar» (también en los ajustes ocultos). El mismo contenido está en la guía de inicio (paso
+  «Haz una buena foto») y en las instrucciones (bloque «Cómo hacer una buena foto»).
 - R5. **Pulsación larga** sobre una miniatura: modo selección con acciones abajo.
   - «Eliminar» (con confirmación; permite varias fotos). Borra solo de la app, nunca de la galería del móvil.
   - «Quitar fondo» (solo con una foto seleccionada) → abre el editor (§4).
   - Si la foto ya tiene el fondo quitado, «Quitar fondo» pasa a ser «Restaurar original», con una confirmación
     («¿Restaurar la foto original?»); al aceptar vuelve a la foto original.
+- R6a. **Guía de inicio**: ventana por encima de la app, con varios pasos y un dibujo en cada uno (efecto, añadir fotos,
+  preparar la foto, quitar fondo, hacer el efecto, zoom y ajustes, listo). Aparece al abrir la app mientras esté
+  activada (activada por defecto). Se puede saltar. En el último paso hay un interruptor «No mostrar esta guía al abrir la
+  app» (refleja el ajuste actual).
+- R6b. **Instrucciones**: página dentro de los ajustes con el texto detallado y dibujos: qué es la app y el efecto, la
+  galería, el editor (color, tolerancia, desenfoque, cuentagotas, consejos de foto), el visor (arrastre, zoom), los
+  ajustes ocultos y qué hacer si algo falla. Los dibujos se generan con Canvas (`Illustrations.kt`), sin imágenes.
 - R6. **Ajustes ocultos**: pulsación larga en la esquina superior derecha de la galería (el «⋮»). Contienen:
   - Los **4 colores de fondo predefinidos** del editor (negro, blanco, verde croma y azul croma al arrancar). Se puede
     cambiar cualquiera con una paleta de color («si quiero el negro como marrón»), con botón «Restablecer».
   - El **modo de arrastre** del objeto (ver R9-R10).
-  - El aviso «Desarrollado por Wikicode, Adrián Semi, 2026». Más adelante: instrucciones.
+  - **Ayuda**: abrir las Instrucciones, ver la guía de inicio, un interruptor «Mostrar la guía al abrir la app» y otro
+    «Consejos antes de hacer una foto».
+  - El aviso «Desarrollado por Wikicode, Adrián Semi, 2026». 
 
 ## 3. Visor de imagen
 - R7. Al abrir una foto se muestra **a pantalla completa total**: sin barra de estado, sin barra de navegación, sin
@@ -36,6 +50,15 @@ Plataformas: Android + iOS (un único código). Solo vertical. Idioma: español.
 - R9. **Efecto de arrastre**: en pantalla completa, el usuario arrastra la imagen con un dedo en **cualquier
   dirección** (arriba, abajo, izquierda, derecha o diagonal, libre). La imagen sigue al dedo y sale de la pantalla;
   debajo queda el fondo plano del mismo color. Un toque simple NO debe confundirse con un arrastre.
+- R9b. **El arrastre solo empieza sobre el objeto visible**: si el dedo toca la transparencia (el fondo ya quitado),
+  el arrastre no hace nada (ni se alterna la barra). Así se puede sujetar el móvil con otros dedos sobre la zona
+  transparente. Se mira el canal alfa de la imagen mostrada, con un margen de ~10 dp para el borde del objeto. En una
+  foto sin recortar, toda la imagen cuenta como objeto. Los dedos que tocan la transparencia se ignoran también
+  mientras otro dedo hace el arrastre.
+- R9c. **Zoom con pellizco** (dos dedos, ambos sobre el objeto): acercar y alejar (de 0,2x a 8x) y mover la imagen
+  con los dos dedos. La imagen se queda con el zoom con el que se suelte, hasta salir del visor. El zoom funciona
+  también en modo normal; el arrastre solo en pantalla completa. Si la imagen está ampliada o movida, el arrastre la
+  saca entera de la pantalla.
 - R10. **Modo de arrastre** (ajuste global, dos opciones):
   1. **Arrastrar y soltar**: al soltar, el objeto desaparece. Subopción:
      - *En cualquier momento*: desaparece al soltarlo en cualquier punto (tras un arrastre mínimo de ~12 dp).
@@ -53,6 +76,11 @@ Plataformas: Android + iOS (un único código). Solo vertical. Idioma: español.
 - R13. **Color** de relleno elegido por foto: los 4 predefinidos de los ajustes (R6) y un **quinto botón** que abre
   una paleta para elegir un color solo para esa foto. Se propone el último usado.
 - R14. **Tolerancia** (1-100) ajustable en directo; se propone la última usada.
+- R14b. **Desenfoque del borde** (deslizador 0-100, por defecto 10; se propone el último usado): suaviza la
+  transición entre el objeto y el fondo para que no se note el corte. 0 = borde duro. El radio es proporcional al
+  tamaño de la imagen (la vista previa y el resultado final se ven igual). Los píxeles de la transición toman el color
+  del objeto, no el del fondo viejo (así no aparece un halo). Primera versión como deslizador; si el uso real lo pide,
+  se convertirá en presets (suave / medio / alto).
 - R15. **Cuentagotas**: al activarlo y tocar una zona de la foto, ese color (media de 5 × 5 píxeles) es el fondo a
   retirar, y se parte también desde ese punto; hay un enlace para volver a la detección automática por los bordes.
 - R16. Algoritmo propio en `commonMain` (`domain/BackgroundCutout.kt`): inundación desde los bordes por similitud de
@@ -69,9 +97,11 @@ Plataformas: Android + iOS (un único código). Solo vertical. Idioma: español.
    (ML Kit / Vision). Decisión pendiente de validar con fotos reales.
 4. **Hecho**: colores predefinidos editables + color personalizado por foto; modos de arrastre (arrastrar y soltar con
    subopción de borde; acompañar). A validar con uso real; se pueden añadir más modos.
-5. Futuro: carpetas, instrucciones en ajustes ocultos.
+5. **Hecho**: desenfoque del borde, guía de inicio e instrucciones con dibujos.
+6. Futuro: carpetas; presets de desenfoque; capturas reales en la guía (ahora son dibujos).
 
 ## 6. Preguntas abiertas
 - Umbrales del modo «acompañar» (25 % del lado menor / velocidad) y del borde (80 dp): ajustar tras probar en móvil.
 - Si el color es negro puro en OLED, valorar el efecto frente al negro de la foto.
+- Zoom: ¿hace falta poder pellizcar con los dedos fuera del objeto (ahora ambos dedos deben tocar el objeto)? ¿Un gesto para restablecer el zoom?
 - Calidad del recorte con fotos reales (texturas, objeto y fondo de tono parecido).

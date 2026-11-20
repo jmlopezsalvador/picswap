@@ -45,4 +45,20 @@ class SettingsStoreTest {
         assertEquals(0xFF8B5A2BL, loaded.presets[0])
         assertEquals(DragSettings(DragMode.Follow, true, 120), loaded.drag)
     }
+
+    @Test fun featherAndGuideAreStored() {
+        val store = SettingsStore(MemoryStore())
+        assertEquals(10, store.load().lastFeather)
+        assertEquals(true, store.load().showGuide)
+        store.save(store.load().copy(lastFeather = 55, showGuide = false))
+        assertEquals(55, store.load().lastFeather)
+        assertEquals(false, store.load().showGuide)
+    }
+
+    @Test fun photoTipsAreOnByDefaultAndStored() {
+        val store = SettingsStore(MemoryStore())
+        assertEquals(true, store.load().showPhotoTips)
+        store.save(store.load().copy(showPhotoTips = false))
+        assertEquals(false, store.load().showPhotoTips)
+    }
 }

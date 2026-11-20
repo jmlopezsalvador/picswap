@@ -11,7 +11,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
@@ -39,6 +38,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerId
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.ContentScale
@@ -47,10 +48,15 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import com.picswap.domain.DragMode
 import com.picswap.domain.DragSettings
-import com.picswap.domain.computeExitTarget
+import com.picswap.domain.applyPinch
+import com.picswap.domain.computeExitTargetForRect
+import com.picswap.domain.imageRectOnScreen
+import com.picswap.domain.isOpaqueNear
 import com.picswap.domain.isInEdgeBand
 import com.picswap.domain.shouldCommitFollow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.hypot
 
 /**
@@ -72,7 +78,17 @@ fun ViewerScreen(
     loadFull: suspend (String) -> ImageBitmap?,
 ) {
     val image by produceState<ImageBitmap?>(null, id, imageVersion) { value = loadFull(id) }
-    var offset by remember { mutableStateOf(Offset.Zero) }
+    // Mascara de alfa de la imagen mostrada: sirve para saber si el dedo toca el objeto o la transparencia.
+    val alphaMask by produceState<ByteArray?>(null, image) {
+        val img = image
+        value = if (img == null) null else withContext(Dispatchers.Default) {
+            val px = pixelsOf(img)
+            ByteArray(px.size) { (px[it] ushr 24).toByte() }
+        }
+    }
+    var offset by remember { mutableStateOf(Offset.Zero) }   // desplazamiento del arrastre (el swap)
+    var zoom by remember(id) { mutableStateOf(1f) }          // zoom con pellizco: se queda como lo dejes
+    var pan by remember(id) { mutableStateOf(Offset.Zero) }  // desplazamiento al hacer zoom con dos dedos
     var gone by remember { mutableStateOf(false) }
     var animating by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -89,21 +105,36 @@ fun ViewerScreen(
                     contentDescription = null,
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize().graphicsLayer {
-                        translationX = offset.x
-                        translationY = offset.y
+                        scaleX = zoom
+                        scaleY = zoom
+                        translationX = pan.x + offset.x
+                        translationY = pan.y + offset.y
                     },
                 )
             }
         }
 
-        // Capa de gestos: toque (alterna la barra) y arrastre libre (solo en pantalla completa).
+        // Capa de gestos:
+        // - Toque: alterna la barra.
+        // - Dos dedos sobre el objeto: zoom (pellizco) y desplazamiento; el zoom se queda como lo dejes.
+        // - Un dedo que empieza SOBRE EL OBJETO (no sobre la transparencia): arrastre / swap (solo en pantalla completa).
+        //   Los dedos que tocan la transparencia se ignoran: asi se puede sujetar el movil con otros dedos.
         Box(
             Modifier.fillMaxSize()
-                .pointerInput(Unit) { detectTapGestures(onTap = { onToggleChrome() }) }
-                .pointerInput(immersive, gone, widthPx, heightPx, drag) {
-                    if (!immersive || gone) return@pointerInput
+                .tapWithoutDrag { onToggleChrome() }
+                .pointerInput(immersive, gone, widthPx, heightPx, drag, alphaMask) {
+                    if (gone) return@pointerInput
+                    val img = image ?: return@pointerInput
+                    val mask = alphaMask ?: return@pointerInput
                     val bandPx = drag.edgeDp.dp.toPx()
-                    val minSpeedPx = 600.dp.toPx()  // lanzamiento rápido (px/s) en el modo «acompañar»
+                    val minSpeedPx = 600.dp.toPx()  // lanzamiento rapido (px/s) en el modo acompanar
+                    val fingerPx = 10.dp.toPx()     // un dedo no es un punto: margen para tocar el borde del objeto
+                    val center = Offset(widthPx / 2f, heightPx / 2f)
+
+                    /** Hay objeto visible bajo (o junto a) este punto de la pantalla? */
+                    fun hitsObject(p: Offset): Boolean = isOpaqueNear(
+                        mask, img.width, img.height, p.x, p.y, widthPx, heightPx, zoom, pan.x, pan.y, fingerPx,
+                    )
 
                     /** Al soltar: decide si el objeto termina de salir o vuelve a su sitio, y lo anima. */
                     fun release(lastPos: Offset, velocity: Velocity) {
@@ -112,14 +143,18 @@ fun ViewerScreen(
                             // Arrastrar y soltar: sale al soltar (en cualquier sitio o solo junto al borde).
                             DragMode.Drop ->
                                 if (!drag.edgeOnly || isInEdgeBand(lastPos.x, lastPos.y, widthPx, heightPx, bandPx)) start else null
-                            // Acompañar: sale si el gesto es suficiente (distancia o lanzamiento); si no, vuelve.
+                            // Acompanar: sale si el gesto es suficiente (distancia o lanzamiento); si no, vuelve.
                             DragMode.Follow ->
                                 if (shouldCommitFollow(start.x, start.y, velocity.x, velocity.y, widthPx, heightPx, minSpeedPx)) {
                                     if (start.getDistance() >= 1f) start else Offset(velocity.x, velocity.y)
                                 } else null
                         }
                         val minDrag = if (drag.mode == DragMode.Drop) minDragPx else 1f
-                        val target = exitVector?.let { computeExitTarget(it.x, it.y, widthPx, heightPx, minDrag) }
+                        // La imagen puede tener zoom o estar desplazada: tiene que salir entera de la pantalla.
+                        val rect = imageRectOnScreen(img.width, img.height, widthPx, heightPx, zoom, pan.x, pan.y)
+                        val target = exitVector?.let {
+                            computeExitTargetForRect(it.x, it.y, rect, widthPx, heightPx, minDrag)
+                        }
                         val end = if (target != null) Offset(target.dx, target.dy) else Offset.Zero
                         val fast = hypot(velocity.x, velocity.y) >= minSpeedPx
                         scope.launch {
@@ -135,27 +170,95 @@ fun ViewerScreen(
                     }
 
                     awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val first = awaitFirstDown(requireUnconsumed = false)
                         if (animating) return@awaitEachGesture
-                        val tracker = VelocityTracker()
-                        tracker.addPosition(down.uptimeMillis, down.position)
-                        var origin: Offset? = null  // dónde se superó el umbral de arrastre
-                        var last = down.position
+
+                        val active = ArrayList<PointerId>()  // dedos que empezaron sobre el objeto
+                        var swapId: PointerId? = null        // el dedo que hace el arrastre
+                        var swapStart = Offset.Zero
+                        var origin: Offset? = null           // donde se supero el umbral de arrastre
+                        var tracker = VelocityTracker()
+                        var last = first.position
+                        var pinched = false                  // hubo dos dedos: en este gesto ya no hay arrastre
+                        var released = false
+
+                        fun cancelSwap() {
+                            origin = null
+                            swapId = null
+                            offset = Offset.Zero
+                        }
+
+                        fun register(c: PointerInputChange) {
+                            if (!hitsObject(c.position)) return  // dedo sobre la transparencia: se ignora
+                            if (active.isNotEmpty()) {
+                                pinched = true
+                                cancelSwap()
+                            } else {
+                                swapId = c.id
+                                swapStart = c.position
+                                origin = null
+                                tracker = VelocityTracker().also { it.addPosition(c.uptimeMillis, c.position) }
+                                last = c.position
+                            }
+                            active.add(c.id)
+                        }
+
+                        register(first)
                         while (true) {
                             val event = awaitPointerEvent()
-                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                            last = change.position
-                            tracker.addPosition(change.uptimeMillis, change.position)
-                            if (!change.pressed) break
-                            if (origin == null && (change.position - down.position).getDistance() > viewConfiguration.touchSlop) {
-                                origin = change.position
+
+                            // Dedos nuevos: solo cuentan si caen sobre el objeto.
+                            for (c in event.changes) if (c.pressed && !c.previousPressed) register(c)
+
+                            // Dedos que se levantan: si es el del arrastre, se suelta.
+                            for (c in event.changes) {
+                                if (!c.pressed && c.id in active) {
+                                    if (c.id == swapId && origin != null && !pinched && !released && immersive) {
+                                        last = c.position
+                                        tracker.addPosition(c.uptimeMillis, c.position)
+                                        released = true
+                                        release(last, tracker.calculateVelocity())
+                                    }
+                                    active.remove(c.id)
+                                }
                             }
-                            origin?.let { o ->
-                                offset = change.position - o  // la imagen sigue al dedo
-                                change.consume()
+
+                            val act = event.changes.filter { it.id in active && it.pressed }
+                            if (act.size >= 2) {
+                                // Pellizco con dos dedos sobre el objeto: zoom y desplazamiento.
+                                val a = act[0]
+                                val b = act[1]
+                                val prevDist = (a.previousPosition - b.previousPosition).getDistance()
+                                val curDist = (a.position - b.position).getDistance()
+                                val zoomChange = if (prevDist > 1f) curDist / prevDist else 1f
+                                val oldC = (a.previousPosition + b.previousPosition) / 2f
+                                val newC = (a.position + b.position) / 2f
+                                val st = applyPinch(
+                                    zoom, pan.x, pan.y, zoomChange, oldC.x, oldC.y, newC.x, newC.y,
+                                    center.x, center.y, 0.2f, 8f,
+                                )
+                                zoom = st.zoom
+                                pan = Offset(st.panX, st.panY)
+                                a.consume()
+                                b.consume()
+                            } else if (act.size == 1 && !pinched && !released && immersive && act[0].id == swapId) {
+                                // Un dedo sobre el objeto: arrastre.
+                                val c = act[0]
+                                last = c.position
+                                tracker.addPosition(c.uptimeMillis, c.position)
+                                if (origin == null && (c.position - swapStart).getDistance() > viewConfiguration.touchSlop) {
+                                    origin = c.position
+                                }
+                                origin?.let { o ->
+                                    offset = c.position - o  // la imagen sigue al dedo
+                                    c.consume()
+                                }
                             }
+
+                            if (event.changes.none { it.pressed }) break
                         }
-                        if (origin != null) release(last, tracker.calculateVelocity())
+                        // Gesto cancelado sin llegar a soltar el dedo del arrastre.
+                        if (origin != null && !pinched && !released && immersive) release(last, tracker.calculateVelocity())
                     }
                 },
         )
@@ -189,5 +292,29 @@ fun ViewerScreen(
 private fun BarIcon(onClick: () -> Unit, content: @Composable () -> Unit) {
     Box(Modifier.size(48.dp).clip(CircleShape).clickable(onClick = onClick), contentAlignment = Alignment.Center) {
         content()
+    }
+}
+
+/**
+ * Toque simple: un solo dedo que se levanta enseguida sin haberse movido. Un arrastre que no sea del objeto
+ * (por ejemplo, desde la transparencia) o un gesto con varios dedos NO cuenta como toque; asi no se alterna la
+ * barra sin querer mientras se sujeta el movil.
+ */
+private fun Modifier.tapWithoutDrag(onTap: () -> Unit): Modifier = pointerInput(Unit) {
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false)
+        val slop = viewConfiguration.touchSlop
+        val timeout = viewConfiguration.longPressTimeoutMillis
+        var invalid = false
+        while (true) {
+            val event = awaitPointerEvent()
+            if (event.changes.any { it.id != down.id }) invalid = true  // aparecio otro dedo
+            val c = event.changes.firstOrNull { it.id == down.id } ?: break
+            if ((c.position - down.position).getDistance() > slop || c.isConsumed) invalid = true
+            if (!c.pressed) {
+                if (!invalid && c.uptimeMillis - down.uptimeMillis < timeout) onTap()
+                break
+            }
+        }
     }
 }

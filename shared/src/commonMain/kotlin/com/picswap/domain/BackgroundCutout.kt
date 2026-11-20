@@ -1,5 +1,7 @@
 package com.picswap.domain
 
+import kotlin.math.roundToInt
+
 /**
  * Recorte de fondo sin IA. Trabaja sobre píxeles ARGB no premultiplicados (como `ImageBitmap.readPixels`).
  *
@@ -12,6 +14,7 @@ package com.picswap.domain
  *
  * @param tolerance 0 = desactivado (devuelve la imagen tal cual). Valores típicos: 25-60 (distancia RGB).
  * @param refColor color de fondo a retirar elegido con el cuentagotas; si es null se estima con los bordes.
+ * @param feather desenfoque del borde (0-100): 0 = borde duro; más = transición más ancha y suave entre objeto y fondo.
  * @param seedIndex posición (índice del píxel) tocada con el cuentagotas: se parte también desde ahí, aunque no
  *   esté en el borde de la imagen.
  */
@@ -22,6 +25,7 @@ fun cutoutBackground(
     tolerance: Int,
     refColor: Int? = null,
     seedIndex: Int? = null,
+    feather: Int = 10,
 ): IntArray {
     if (tolerance <= 0 || width < 4 || height < 4) return argb
     val n = width * height
@@ -111,25 +115,62 @@ fun cutoutBackground(
         }
     }
 
-    // --- 4. Suavizar el borde (desenfoque 3x3 de la máscara) ---
+    // --- 4. Desenfocar el borde: el radio es proporcional al tamaño de la imagen (así la vista previa y el
+    //        resultado final se ven igual) y `feather` 0 deja el borde duro. ---
+    val radius = if (feather <= 0) 0 else maxOf(1, (feather / 100f * 0.012f * maxOf(width, height)).roundToInt())
     val out = IntArray(n)
-    for (y in 0 until height) {
-        for (x in 0 until width) {
-            val i = y * width + x
-            var sum = 0
-            var cnt = 0
-            for (dy in -1..1) {
-                val yy = y + dy
-                if (yy < 0 || yy >= height) continue
-                for (dx in -1..1) {
-                    val xx = x + dx
-                    if (xx < 0 || xx >= width) continue
-                    sum += hard[yy * width + xx]
-                    cnt++
-                }
-            }
-            val a = sum / cnt
-            out[i] = if (a == 0) 0 else (a shl 24) or (argb[i] and 0x00FFFFFF)
+    if (radius == 0) {
+        for (i in 0 until n) if (hard[i] != 0) out[i] = (0xFF shl 24) or (argb[i] and 0x00FFFFFF)
+        return out
+    }
+
+    fun blur(src: IntArray): IntArray {
+        var r = boxBlur(src, width, height, radius)
+        r = boxBlur(r, width, height, radius)
+        return r
+    }
+
+    val alpha = blur(hard)
+    // Color de los píxeles de la transición: media de los píxeles de OBJETO cercanos. Si se dejara el color original,
+    // la transición se teñiría con el color del fondo viejo y aparecería un halo oscuro (o claro) alrededor del objeto.
+    fun channel(shift: Int): IntArray {
+        val c = IntArray(n) { if (hard[it] != 0) (argb[it] shr shift) and 0xFF else 0 }
+        return blur(c)
+    }
+    val rB = channel(16)
+    val gB = channel(8)
+    val bB = channel(0)
+    for (i in 0 until n) {
+        val a = alpha[i]
+        if (a == 0) continue
+        val r = minOf(255, rB[i] * 255 / a)
+        val g = minOf(255, gB[i] * 255 / a)
+        val bl = minOf(255, bB[i] * 255 / a)
+        out[i] = (a shl 24) or (r shl 16) or (g shl 8) or bl
+    }
+    return out
+}
+
+/** Desenfoque de caja separable (media de una ventana de 2r+1 píxeles) sobre una máscara de 0 a 255. */
+private fun boxBlur(src: IntArray, w: Int, h: Int, r: Int): IntArray {
+    val tmp = IntArray(src.size)
+    val out = IntArray(src.size)
+    val win = 2 * r + 1
+    for (y in 0 until h) {
+        val row = y * w
+        var sum = 0
+        for (k in -r..r) sum += src[row + k.coerceIn(0, w - 1)]
+        for (x in 0 until w) {
+            tmp[row + x] = sum / win
+            sum += src[row + minOf(x + r + 1, w - 1)] - src[row + maxOf(x - r, 0)]
+        }
+    }
+    for (x in 0 until w) {
+        var sum = 0
+        for (k in -r..r) sum += tmp[k.coerceIn(0, h - 1) * w + x]
+        for (y in 0 until h) {
+            out[y * w + x] = sum / win
+            sum += tmp[minOf(y + r + 1, h - 1) * w + x] - tmp[maxOf(y - r, 0) * w + x]
         }
     }
     return out

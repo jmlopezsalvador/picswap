@@ -72,6 +72,7 @@ fun EditorScreen(
     presets: List<Long>,
     initialColor: Long,
     initialTolerance: Int,
+    initialFeather: Int,
     loadOriginal: suspend (Int) -> ImageBitmap?,
     onSave: suspend (EditParams) -> Unit,
     onBack: () -> Unit,
@@ -84,6 +85,7 @@ fun EditorScreen(
     var preview by remember { mutableStateOf<ImageBitmap?>(null) }
     var color by remember { mutableStateOf(initialColor) }
     var tolerance by remember { mutableStateOf(initialTolerance.coerceIn(1, 100).toFloat()) }
+    var feather by remember { mutableStateOf(initialFeather.coerceIn(0, 100).toFloat()) }
     var eyedropper by remember { mutableStateOf(false) }
     var pickX by remember { mutableStateOf<Float?>(null) }
     var pickY by remember { mutableStateOf<Float?>(null) }
@@ -99,10 +101,10 @@ fun EditorScreen(
         pixels = withContext(Dispatchers.Default) { pixelsOf(img) }
     }
 
-    fun currentParams() = EditParams(color, tolerance.roundToInt(), refColor, pickX, pickY)
+    fun currentParams() = EditParams(color, tolerance.roundToInt(), feather.roundToInt(), refColor, pickX, pickY)
 
     // Vista previa en vivo: se recalcula al mover la tolerancia o fijar el cuentagotas.
-    LaunchedEffect(pixels, tolerance.roundToInt(), refColor, pickX, pickY) {
+    LaunchedEffect(pixels, tolerance.roundToInt(), feather.roundToInt(), refColor, pickX, pickY) {
         val px = pixels ?: return@LaunchedEffect
         val img = source ?: return@LaunchedEffect
         delay(25)  // si se sigue moviendo el deslizador, este cálculo se cancela y empieza otro
@@ -251,7 +253,7 @@ fun EditorScreen(
             }
             Spacer(Modifier.height(10.dp))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Tolerancia", color = PicColors.TextSecondary, fontSize = 13.sp, modifier = Modifier.width(78.dp))
+                Text("Tolerancia", color = PicColors.TextSecondary, fontSize = 13.sp, modifier = Modifier.width(92.dp))
                 Slider(
                     value = tolerance,
                     onValueChange = { tolerance = it },
@@ -265,6 +267,24 @@ fun EditorScreen(
                 )
                 Text(
                     tolerance.roundToInt().toString(), color = PicColors.TextPrimary, fontSize = 14.sp,
+                    modifier = Modifier.padding(start = 8.dp).width(30.dp),
+                )
+            }
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Desenfoque", color = PicColors.TextSecondary, fontSize = 13.sp, modifier = Modifier.width(92.dp))
+                Slider(
+                    value = feather,
+                    onValueChange = { feather = it },
+                    valueRange = 0f..100f,
+                    modifier = Modifier.weight(1f),
+                    colors = SliderDefaults.colors(
+                        thumbColor = PicColors.Accent,
+                        activeTrackColor = PicColors.Accent,
+                        inactiveTrackColor = PicColors.Bg,
+                    ),
+                )
+                Text(
+                    feather.roundToInt().toString(), color = PicColors.TextPrimary, fontSize = 14.sp,
                     modifier = Modifier.padding(start = 8.dp).width(30.dp),
                 )
             }
