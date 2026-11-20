@@ -33,6 +33,30 @@ private const val THUMB_SIZE = 360
 /** Color de fondo de una foto sin recortar (el que se ve en las franjas del visor). */
 private const val DEFAULT_BG = 0xFF000000L
 
+/** Valores con los que se abre el editor: los de la última edición de esa foto o, si no está editada, los últimos usados. */
+private fun editInitial(meta: PhotoMeta?, settings: AppSettings): EditParams =
+    if (meta == null) {
+        EditParams(
+            color = settings.lastColor,
+            tolerance = settings.lastTolerance,
+            feather = settings.lastFeather,
+            featherAmount = settings.lastFeatherAmount,
+        )
+    } else {
+        EditParams(
+            color = meta.bgColor,
+            tolerance = meta.tolerance ?: settings.lastTolerance,
+            feather = meta.feather ?: settings.lastFeather,
+            refColor = meta.refColor,
+            seedX = meta.seedX,
+            seedY = meta.seedY,
+            featherAmount = meta.featherAmount ?: settings.lastFeatherAmount,
+            zoom = meta.zoom,
+            panX = meta.panX,
+            panY = meta.panY,
+        )
+    }
+
 /** Raíz Compose común (Android e iOS): navegación entre galería, visor, editor de fondo y ajustes ocultos. */
 @Composable
 fun PicSwapRoot(store: SettingsStore, photoFiles: PhotoFiles) {
@@ -90,13 +114,7 @@ fun PicSwapRoot(store: SettingsStore, photoFiles: PhotoFiles) {
                     ids = repo.ids()
                     metas = metas - toDelete
                 },
-                onRemoveBackground = { screen = Screen.Editor(it) },
-                onRestoreOriginal = { id ->
-                    repo.restoreOriginal(id)
-                    metas = metas - id
-                    thumbCache.remove(id)
-                    imageVersion++
-                },
+                onEdit = { screen = Screen.Editor(it) },
                 onPickFromGallery = picker::pickFromGallery,
                 onTakePhoto = picker::takePhoto,
                 showPhotoTips = settings.showPhotoTips,
@@ -121,10 +139,15 @@ fun PicSwapRoot(store: SettingsStore, photoFiles: PhotoFiles) {
             }
             is Screen.Editor -> EditorScreen(
                 presets = settings.presets,
-                initialColor = settings.lastColor,
-                initialTolerance = settings.lastTolerance,
-                initialFeather = settings.lastFeather,
-                initialFeatherAmount = settings.lastFeatherAmount,
+                initial = editInitial(metas[s.id], settings),
+                edited = s.id in metas,
+                onRestore = {
+                    repo.restoreOriginal(s.id)
+                    metas = metas - s.id
+                    thumbCache.remove(s.id)
+                    imageVersion++
+                    screen = Screen.Gallery
+                },
                 loadOriginal = { maxSize ->
                     withContext(Dispatchers.Default) { repo.bytes(s.id)?.let { decodeImage(it, maxSize) } }
                 },
@@ -134,7 +157,18 @@ fun PicSwapRoot(store: SettingsStore, photoFiles: PhotoFiles) {
                         repo.bytes(s.id)?.let { decodeImage(it, FULL_SIZE) }?.let { makeCutoutPng(it, params) }
                     }
                     if (png != null) {
-                        val meta = PhotoMeta(params.color, params.zoom, params.panX, params.panY)
+                        val meta = PhotoMeta(
+                            bgColor = params.color,
+                            zoom = params.zoom,
+                            panX = params.panX,
+                            panY = params.panY,
+                            tolerance = params.tolerance,
+                            feather = params.feather,
+                            featherAmount = params.featherAmount,
+                            refColor = params.refColor,
+                            seedX = params.seedX,
+                            seedY = params.seedY,
+                        )
                         repo.saveCutout(s.id, png, meta)
                         metas = metas + (s.id to meta)
                         thumbCache.remove(s.id)

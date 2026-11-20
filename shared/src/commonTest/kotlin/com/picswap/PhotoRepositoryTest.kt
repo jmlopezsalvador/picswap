@@ -80,4 +80,19 @@ class PhotoRepositoryTest {
         files.write(id.removeSuffix(".jpg") + ".bg", "4278190080".encodeToByteArray())
         assertEquals(com.picswap.domain.PhotoMeta(0xFF000000L), repo.metas()[id])
     }
+
+    @Test fun metaKeepsTheEditSettingsToReopenTheEditor() {
+        val repo = PhotoRepository(MemoryFiles(), { 11L })
+        val id = repo.add(byteArrayOf(1))
+        val meta = com.picswap.domain.PhotoMeta(
+            0xFF000000L, 1.5f, 0.1f, 0.2f,
+            tolerance = 55, feather = 20, featherAmount = 80, refColor = -123456, seedX = 0.25f, seedY = 0.75f,
+        )
+        repo.saveCutout(id, byteArrayOf(2), meta)
+        assertEquals(meta, repo.metas()[id])
+        // Sin cuentagotas: los campos nulos se guardan y se recuperan como nulos.
+        val plain = com.picswap.domain.PhotoMeta(0xFFFFFFFFL, tolerance = 30, feather = 5, featherAmount = 100)
+        repo.saveCutout(id, byteArrayOf(2), plain)
+        assertEquals(plain, repo.metas()[id])
+    }
 }

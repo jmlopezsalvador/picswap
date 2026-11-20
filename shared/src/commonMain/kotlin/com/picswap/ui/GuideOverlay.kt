@@ -63,15 +63,15 @@ private val guideSteps = listOf(
     ),
     GuideStep(
         "3. Prepara la foto",
-        "Mantén pulsada una foto para seleccionarla. Abajo aparecen sus acciones: Eliminar y Quitar fondo. Si ya le has " +
-            "quitado el fondo, en su lugar aparece Restaurar original.",
+        "Mantén pulsada una foto para seleccionarla. Abajo aparecen sus acciones: Eliminar y Editar. Editar abre el editor, " +
+            "donde le quitas el fondo y la dejas como quieras.",
         Art.Selection,
     ),
     GuideStep(
         "4. Quita el fondo",
-        "En el editor ves el resultado en directo. Elige el color del fondo, ajusta la tolerancia (cuánto fondo se retira) y " +
-            "el desenfoque del borde (para que no se note el corte). Con el cuentagotas tocas en el fondo para decir cuál quitar, " +
-            "y pellizcando dejas el objeto del tamaño que quieras.",
+        "En el editor la foto ocupa toda la pantalla, tal como se verá al abrirla, con los controles encima (se pueden plegar). " +
+            "Elige el color del fondo, ajusta la tolerancia y el desenfoque del borde, y usa el cuentagotas tocando en el fondo " +
+            "que quieres quitar. Pellizcando dejas el objeto del tamaño que quieras.",
         Art.Editor,
     ),
     GuideStep(

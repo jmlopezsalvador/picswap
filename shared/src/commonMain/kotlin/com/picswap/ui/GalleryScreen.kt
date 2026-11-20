@@ -52,7 +52,7 @@ import androidx.compose.ui.unit.sp
 /**
  * Pantalla principal: galería plana de miniaturas.
  * - Toque en una foto: la abre. Pulsación larga: modo selección con acciones abajo
- *   (Eliminar y, si hay una sola foto, «Quitar fondo» o «Restaurar original»).
+ *   (Eliminar y, si hay una sola foto, Editar). Restaurar la foto original se hace dentro del editor.
  * - Botón «+»: añadir foto (cámara o galería del móvil).
  * - Pulsación larga en el icono de arriba a la derecha (⋮): ajustes ocultos.
  *
@@ -68,8 +68,7 @@ fun GalleryScreen(
     loadThumb: suspend (String) -> ImageBitmap?,
     onOpen: (String) -> Unit,
     onDelete: (Set<String>) -> Unit,
-    onRemoveBackground: (String) -> Unit,
-    onRestoreOriginal: (String) -> Unit,
+    onEdit: (String) -> Unit,
     onPickFromGallery: () -> Unit,
     onTakePhoto: () -> Unit,
     showPhotoTips: Boolean,
@@ -81,7 +80,6 @@ fun GalleryScreen(
     var confirmDelete by remember { mutableStateOf(false) }
     var showTips by remember { mutableStateOf(false) }
     var tipsDontShowAgain by remember { mutableStateOf(false) }
-    var confirmRestore by remember { mutableStateOf(false) }
     val selecting = selected.isNotEmpty()
     val single = selected.singleOrNull()
 
@@ -168,13 +166,9 @@ fun GalleryScreen(
             ) {
                 ActionButton(IconKind.Trash, "Eliminar") { confirmDelete = true }
                 if (single != null) {
-                    if (single in bgColors) {
-                        ActionButton(IconKind.Undo, "Restaurar original") { confirmRestore = true }
-                    } else {
-                        ActionButton(IconKind.Wand, "Quitar fondo") {
-                            selected = emptySet()
-                            onRemoveBackground(single)
-                        }
+                    ActionButton(IconKind.Edit, "Editar") {
+                        selected = emptySet()
+                        onEdit(single)
                     }
                 }
             }
@@ -263,23 +257,6 @@ fun GalleryScreen(
                 }) { Text("Eliminar", color = PicColors.Accent) }
             },
             dismissButton = { TextButton({ confirmDelete = false }) { Text("Cancelar", color = PicColors.Accent) } },
-        )
-    }
-
-    if (confirmRestore && single != null) {
-        AlertDialog(
-            onDismissRequest = { confirmRestore = false },
-            containerColor = PicColors.Surface,
-            title = { Text("¿Restaurar la foto original?", color = PicColors.TextPrimary) },
-            text = { Text("Se perderá el fondo que hayas aplicado a esta foto.", color = PicColors.TextSecondary) },
-            confirmButton = {
-                TextButton({
-                    confirmRestore = false
-                    onRestoreOriginal(single)
-                    selected = emptySet()
-                }) { Text("Restaurar", color = PicColors.Accent) }
-            },
-            dismissButton = { TextButton({ confirmRestore = false }) { Text("Cancelar", color = PicColors.Accent) } },
         )
     }
 }

@@ -9,10 +9,23 @@ interface PhotoFiles {
 }
 
 /**
- * Datos de una foto recortada: color de fondo (ARGB) y vista por defecto en el visor. El zoom es un factor sobre el
- * tamaño «ajustado a pantalla»; el desplazamiento (`panX`, `panY`) va en fracciones del ancho y el alto de la pantalla.
+ * Datos de una foto editada: color de fondo (ARGB), vista por defecto en el visor y los ajustes con los que se editó
+ * (para poder volver a abrir el editor tal como se dejó). El zoom es un factor sobre el tamaño «ajustado a pantalla»;
+ * el desplazamiento (`panX`, `panY`) va en fracciones del ancho y el alto de la pantalla. Los ajustes pueden ser null
+ * en fotos guardadas con versiones anteriores.
  */
-data class PhotoMeta(val bgColor: Long, val zoom: Float = 1f, val panX: Float = 0f, val panY: Float = 0f)
+data class PhotoMeta(
+    val bgColor: Long,
+    val zoom: Float = 1f,
+    val panX: Float = 0f,
+    val panY: Float = 0f,
+    val tolerance: Int? = null,
+    val feather: Int? = null,
+    val featherAmount: Int? = null,
+    val refColor: Int? = null,
+    val seedX: Float? = null,
+    val seedY: Float? = null,
+)
 
 /**
  * Colección plana de fotos de la app. Cada foto es un fichero `<marca de tiempo>.jpg` (original) y,
@@ -46,7 +59,11 @@ class PhotoRepository(
     /** Guarda el recorte junto con los datos de la foto (color de fondo y vista por defecto). */
     fun saveCutout(id: String, pngBytes: ByteArray, meta: PhotoMeta) {
         files.write(cutoutName(id), pngBytes)
-        files.write(metaName(id), "${meta.bgColor} ${meta.zoom} ${meta.panX} ${meta.panY}".encodeToByteArray())
+        val fields = listOf(
+            meta.bgColor, meta.zoom, meta.panX, meta.panY,
+            meta.tolerance, meta.feather, meta.featherAmount, meta.refColor, meta.seedX, meta.seedY,
+        ).joinToString(" ") { it?.toString() ?: "-" }
+        files.write(metaName(id), fields.encodeToByteArray())
     }
 
     fun saveCutout(id: String, pngBytes: ByteArray, bgColor: Long) = saveCutout(id, pngBytes, PhotoMeta(bgColor))
@@ -64,6 +81,12 @@ class PhotoRepository(
                 zoom = parts.getOrNull(1)?.toFloatOrNull() ?: 1f,
                 panX = parts.getOrNull(2)?.toFloatOrNull() ?: 0f,
                 panY = parts.getOrNull(3)?.toFloatOrNull() ?: 0f,
+                tolerance = parts.getOrNull(4)?.toIntOrNull(),
+                feather = parts.getOrNull(5)?.toIntOrNull(),
+                featherAmount = parts.getOrNull(6)?.toIntOrNull(),
+                refColor = parts.getOrNull(7)?.toIntOrNull(),
+                seedX = parts.getOrNull(8)?.toFloatOrNull(),
+                seedY = parts.getOrNull(9)?.toFloatOrNull(),
             )
         }
         return result

@@ -33,9 +33,8 @@ fondo negro) a pantalla completa total y **arrastra el objeto fuera de la pantal
 el fondo plano, como si lo hubiera sacado del móvil. Detalle completo en `docs/SPEC.md`.
 - Galería plana de miniaturas (solo la foto, sin fechas ni nombres), botones decorativos que no funcionan, añadir
   (cámara o galería del móvil, **sin procesar**). Solo vertical, español, todo local.
-- Pulsación larga en una foto: selección con acciones abajo (Eliminar; y, con una sola foto, «Quitar fondo» o
-  «Restaurar original» si ya está recortada).
-- «Quitar fondo» abre un editor por foto (vista previa en vivo): color de relleno, tolerancia y cuentagotas. Procesado
+- Pulsación larga en una foto: selección con acciones abajo (Eliminar; y, con una sola foto, «Editar»).
+- «Editar» abre siempre el editor de la foto (a pantalla completa, controles semitransparentes y plegables, vista previa en vivo): color de relleno, tolerancia, desenfoque, cuentagotas y tamaño. «Restaurar foto original» es un botón DENTRO del editor (solo si la foto ya está editada); al volver a editar se reabre con los ajustes guardados. Procesado
   propio sin IA. Se guarda original `.jpg` + recorte `.png` con alfa + color `.bg`; la app pinta el color debajo.
 - Visor: pantalla completa; zoom con pellizco (dos dedos sobre el objeto) y el arrastre solo empieza sobre el objeto visible (alfa > 128), no sobre la transparencia; un toque alterna con modo normal (barra superior con flecha atrás e iconos de atrezo);
   arrastre libre en cualquier dirección que deja solo el color de fondo de la foto.
@@ -103,5 +102,6 @@ misma tarea en que se cambie una función** (textos y dibujos).
   `BackgroundCutout.kt` (los píxeles del objeto conservan su color exacto: fallo corregido, antes se desenfocaba toda la imagen);
   el editor simula la pantalla del visor para que el zoom/posición guardados (`PhotoMeta` en `.bg`) coincidan con el visor.
   El pellizco del editor no se pudo probar (sí el arrastre con un dedo, que usa la misma lógica).
+- **Editor a pantalla completa + menú «Editar» hechos (Android verificado):** la foto se ve a tamaño real como en el visor (ya no hay miniatura ni recorte); `PhotoMeta` (fichero `.bg`) guarda también los ajustes de la edición para reabrirla igual; restaurar vive en el editor.
 - **Siguiente:** validar con fotos reales del usuario; si no basta el recorte, segunda foto o IA (fase 3). Ajustar umbrales
   del arrastre tras probar en móvil. Probar el pellizco en un móvil real.

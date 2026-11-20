@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-enum class IconKind { Back, Plus, Search, More, Share, Heart, Trash, Close, Check, Info, Sliders, Wand, Undo, Eyedropper }
+enum class IconKind { Back, Plus, Search, More, Share, Heart, Trash, Close, Check, Info, Sliders, Wand, Undo, Eyedropper, Edit }
 
 /** Iconos dibujados con Canvas/Path sobre una cuadrícula de 24 × 24 (sin depender de material-icons). */
 @Composable
@@ -66,6 +66,13 @@ fun AppIcon(kind: IconKind, tint: Color, size: Dp = 24.dp, modifier: Modifier = 
                 line(4.5f, 19.5f, 14f, 10f)
                 line(18f, 3.5f, 18f, 9.5f); line(15f, 6.5f, 21f, 6.5f)
                 line(19.5f, 14f, 19.5f, 17f); line(18f, 15.5f, 21f, 15.5f)
+            }
+            IconKind.Edit -> {
+                path { k ->
+                    moveTo(4f * k, 20f * k); lineTo(5f * k, 15.5f * k); lineTo(15.5f * k, 5f * k)
+                    lineTo(19f * k, 8.5f * k); lineTo(8.5f * k, 19f * k); close()
+                }
+                line(13.5f, 7f, 17f, 10.5f)
             }
             IconKind.Undo -> {
                 path { k -> moveTo(9f * k, 5.5f * k); lineTo(4f * k, 10.5f * k); lineTo(9f * k, 15.5f * k) }

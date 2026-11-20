@@ -23,9 +23,9 @@ Plataformas: Android + iOS (un único código). Solo vertical. Idioma: español.
   «Haz una buena foto») y en las instrucciones (bloque «Cómo hacer una buena foto»).
 - R5. **Pulsación larga** sobre una miniatura: modo selección con acciones abajo.
   - «Eliminar» (con confirmación; permite varias fotos). Borra solo de la app, nunca de la galería del móvil.
-  - «Quitar fondo» (solo con una foto seleccionada) → abre el editor (§4).
-  - Si la foto ya tiene el fondo quitado, «Quitar fondo» pasa a ser «Restaurar original», con una confirmación
-    («¿Restaurar la foto original?»); al aceptar vuelve a la foto original.
+  - «Editar» (solo con una foto seleccionada): abre siempre el editor (§4), esté o no editada la foto. Si ya estaba
+    editada, se abre con los ajustes con los que se guardó (color, tolerancia, desenfoque, rango, cuentagotas y vista).
+  - «Restaurar original» ya NO está en este menú: es un botón dentro del editor (R17).
 - R6a. **Guía de inicio**: ventana por encima de la app, con varios pasos y un dibujo en cada uno (efecto, añadir fotos,
   preparar la foto, quitar fondo, hacer el efecto, zoom y ajustes, listo). Aparece al abrir la app mientras esté
   activada (activada por defecto). Se puede saltar. En el último paso hay un interruptor «No mostrar esta guía al abrir la
@@ -71,7 +71,8 @@ Plataformas: Android + iOS (un único código). Solo vertical. Idioma: español.
   que deja una foto que no tiene la proporción de la pantalla.
 
 ## 4. Editor «Quitar fondo» (por foto, sin IA)
-- R12. Pantalla tipo editor con la foto y **vista previa en vivo**. Se guarda con «Guardar»; la flecha atrás
+- R12. Pantalla tipo editor (título «Editar») con la foto a PANTALLA COMPLETA y **vista previa en vivo**; la barra
+  superior y los controles van semitransparentes por encima y los controles se pueden plegar («Mostrar controles»). Se guarda con «Guardar»; la flecha atrás
   cancela sin cambios.
 - R13. **Color** de relleno elegido por foto: los 4 predefinidos de los ajustes (R6) y un **quinto botón** que abre
   una paleta para elegir un color solo para esa foto. Se propone el último usado.
@@ -82,7 +83,7 @@ Plataformas: Android + iOS (un único código). Solo vertical. Idioma: español.
   se ven igual). El resto de la imagen NO se toca: los píxeles del objeto conservan su color exacto y los de la
   transición toman el color del objeto, no el del fondo viejo (sin halo). Se proponen los últimos valores usados.
 - R14c. **Tamaño de la foto (zoom)**: en el editor se puede pellizcar (y arrastrar) la vista previa para ajustar el
-  tamaño y la posición. El recuadro simula la pantalla del visor (línea fina), así que es WYSIWYG. Se guarda por foto
+  tamaño y la posición. La foto ocupa toda la pantalla, igual que en el visor, así que es WYSIWYG a tamaño real. Se guarda por foto
   (zoom y posición en fracciones de pantalla, en el fichero `.bg`) y es la vista con la que se abre la foto en el visor.
   «Restablecer tamaño» la devuelve a como estaba. El cuentagotas sigue funcionando con zoom.
 - R15. **Cuentagotas**: al activarlo y tocar una zona de la foto, ese color (media de 5 × 5 píxeles) es el fondo a
@@ -90,8 +91,9 @@ Plataformas: Android + iOS (un único código). Solo vertical. Idioma: español.
 - R16. Algoritmo propio en `commonMain` (`domain/BackgroundCutout.kt`): inundación desde los bordes por similitud de
   color, quitar motas, afinar 1 px y suavizar el borde. Resultado: PNG con transparencia; el fondo lo pinta la app con
   el color de la foto (así el fondo que queda al arrastrar es exactamente ese color).
-- R17. Se conservan siempre el original (`.jpg`), el recorte (`.png`) y el color (`.bg`). Restaurar borra los dos
-  últimos.
+- R17. Se conservan siempre el original (`.jpg`), el recorte (`.png`) y los datos (`.bg`: color, vista y ajustes de la
+  edición). **Restaurar foto original**: botón dentro del editor, visible solo si la foto ya estaba editada; pide
+  confirmación («¿Restaurar la foto original?»), borra el recorte y los datos y vuelve a la galería.
 
 ## 5. Fases
 1. **Hecha**: galería, añadir, eliminar, visor con modo completo/normal, arrastre libre, persistencia.

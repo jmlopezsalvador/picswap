@@ -55,7 +55,7 @@ private val instructions = listOf(
             Item.Bullets(
                 listOf(
                     "1. Haz una foto del objeto sobre una superficie lisa y de un solo color, muy distinta a la del objeto, y añádela a la galería.",
-                    "2. Mantén pulsada la foto y elige Quitar fondo. Ajusta el color, la tolerancia y el desenfoque, y guarda.",
+                    "2. Mantén pulsada la foto y elige Editar. Quita el fondo ajustando el color, la tolerancia y el desenfoque, y guarda.",
                     "3. Abre la foto: se ve a pantalla completa. Sujeta el móvil como siempre, agarra el objeto y arrástralo fuera.",
                 ),
             ),
@@ -80,8 +80,7 @@ private val instructions = listOf(
             Item.Bullets(
                 listOf(
                     "Eliminar: borra las fotos seleccionadas de PicSwap (pide confirmación). Nunca borra nada de la galería del móvil.",
-                    "Quitar fondo (solo con una foto seleccionada): abre el editor para preparar la foto.",
-                    "Restaurar original: si la foto ya tiene el fondo quitado, esta acción sustituye a la anterior. Pide confirmación y devuelve la foto original.",
+                    "Editar (solo con una foto seleccionada): abre el editor para preparar la foto. Si la foto ya está editada, el editor se abre con los ajustes con los que la guardaste.",
                 ),
             ),
         ),
@@ -107,28 +106,30 @@ private val instructions = listOf(
         ),
     ),
     Block(
-        "Quitar el fondo (el editor)",
+        "Editar la foto (el editor)",
         listOf(
             Item.P(
                 "Es la herramienta clave de la app. Sustituye el fondo de la foto por un color plano exacto, de modo que, al sacar " +
-                    "el objeto, el fondo que queda sea idéntico al de la foto. Arriba ves el resultado en directo; abajo están los controles.",
+                    "el objeto, el fondo que queda sea idéntico al de la foto. La foto ocupa toda la pantalla, exactamente como se verá al abrirla, " +
+                    "y los controles van encima, semitransparentes. Con el asa de la parte de arriba del panel se pliegan, y «Mostrar controles» los vuelve a abrir.",
             ),
-            Item.Pic(Art.Editor, "El editor: vista previa arriba y controles abajo."),
+            Item.Pic(Art.Editor, "El editor: la foto a pantalla completa y los controles encima."),
             Item.Bullets(
                 listOf(
                     "Color: el color que se verá detrás del objeto. Hay cuatro colores predefinidos (se pueden cambiar en los ajustes ocultos) y un quinto botón, con forma de arcoíris, que abre una paleta para elegir un color solo para esta foto.",
                     "Tolerancia: cuánto fondo se retira. Con una tolerancia baja solo se quita el fondo muy parecido al color de referencia; con una alta se quita más. Si el fondo tiene sombras o luces irregulares, sube la tolerancia. Si empieza a comerse partes del objeto, bájala.",
                     "Desenfoque (cantidad): cuánto se suaviza el corte entre el objeto y el fondo. Con 0 el corte es duro y puede notarse; con valores altos el borde se difumina mucho. Solo afecta al borde del recorte: el resto del objeto no se toca y se queda nítido.",
                     "Rango del borde: el ancho de la franja, junto al borde, en la que se aplica ese desenfoque. Con un rango pequeño solo se suaviza la línea del corte; con uno grande, una franja más ancha. Juega con los dos deslizadores (cantidad y rango) hasta que no se aprecie el corte.",
-                    "Tamaño de la foto: pellizca con dos dedos sobre la vista previa para acercar o alejar la imagen, y arrástrala para colocarla. El recuadro marcado con una línea fina es la pantalla del visor, así que lo que ves es lo que saldrá. Esa será la vista con la que se abra la foto. «Restablecer tamaño» la devuelve a como estaba.",
+                    "Tamaño de la foto: pellizca con dos dedos sobre la foto para acercar o alejar la imagen, y arrástrala para colocarla. La foto se ve a tamaño real, tal como saldrá en el visor, y esa será la vista con la que se abra. «Restablecer tamaño» la devuelve a como estaba.",
                     "Cuentagotas: normalmente la app detecta el fondo por sí sola mirando los bordes de la foto. Si falla, activa el cuentagotas y toca en una zona del fondo: ese es el color que se quitará, y se parte desde ese punto. Verás un aro donde tocaste. Con «Volver a automático» recuperas la detección normal.",
                     "Guardar: aplica el recorte a la foto. Con la flecha de atrás sales sin cambios.",
+                    "Restaurar foto original: aparece abajo del todo, solo si la foto ya estaba editada. Pide confirmación y devuelve la foto tal como la hiciste, sin recorte ni ajustes.",
                 ),
             ),
             Item.Pic(Art.Eyedropper, "El cuentagotas: toca el fondo que quieres quitar."),
             Item.Sub("Si no te gusta el resultado"),
             Item.P(
-                "Usa Restaurar original desde la galería y vuelve a empezar: la foto original siempre se conserva. Si el recorte " +
+                "Dentro del editor, el botón «Restaurar foto original» devuelve la foto tal como la hiciste; la original siempre se conserva. Si el recorte " +
                     "no queda bien, revisa también los consejos para hacer la foto.",
             ),
         ),

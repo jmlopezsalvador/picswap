@@ -170,15 +170,15 @@ private fun DrawScope.drawGallery(p: Ph, selecting: Boolean) {
         }
     }
     if (selecting) {
-        // Barra de acciones: Eliminar y Quitar fondo.
+        // Barra de acciones: Eliminar y Editar.
         drawRect(Color(0xFF1F2021), p.p(0.0f, 0.86f), Size(p.w, p.h * 0.14f))
         val y = p.y(0.925f)
         // Papelera
         drawRect(Color.White, Offset(p.x(0.2f) - p.w * 0.035f, y - p.h * 0.012f), Size(p.w * 0.07f, p.h * 0.04f), style = Stroke(p.w * 0.012f))
         drawLine(Color.White, Offset(p.x(0.2f) - p.w * 0.05f, y - p.h * 0.02f), Offset(p.x(0.2f) + p.w * 0.05f, y - p.h * 0.02f), strokeWidth = p.w * 0.014f)
-        // Varita (quitar fondo)
-        drawLine(Color.White, Offset(p.x(0.66f), y + p.h * 0.03f), Offset(p.x(0.76f), y - p.h * 0.02f), strokeWidth = p.w * 0.016f, cap = StrokeCap.Round)
-        drawCircle(Color(0xFF2BB35F), p.w * 0.022f, Offset(p.x(0.8f), y - p.h * 0.035f))
+        // Lápiz (editar)
+        drawLine(Color.White, Offset(p.x(0.64f), y + p.h * 0.035f), Offset(p.x(0.78f), y - p.h * 0.03f), strokeWidth = p.w * 0.03f, cap = StrokeCap.Round)
+        drawLine(Color(0xFF2BB35F), Offset(p.x(0.77f), y - p.h * 0.025f), Offset(p.x(0.8f), y - p.h * 0.04f), strokeWidth = p.w * 0.03f, cap = StrokeCap.Round)
         // Dedo con pulsación larga
         finger(Offset(p.x(0.16f), p.y(0.22f)), p.w * 0.1f)
     } else {
