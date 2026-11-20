@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import com.picswap.domain.PhotoFiles
+import com.picswap.domain.PhotoMeta
 import com.picswap.domain.PhotoRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -39,7 +40,8 @@ fun PicSwapRoot(store: SettingsStore, photoFiles: PhotoFiles) {
     val repo = remember { PhotoRepository(photoFiles, { Clock.System.now().toEpochMilliseconds() }) }
     var ids by remember { mutableStateOf(repo.ids()) }
     /** Color de fondo de cada foto a la que ya se le ha quitado el fondo. */
-    var bgColors by remember { mutableStateOf(repo.bgColors()) }
+    var metas by remember { mutableStateOf(repo.metas()) }
+    val bgColors = metas.mapValues { it.value.bgColor }
     var importing by remember { mutableStateOf(0) }
     var imageVersion by remember { mutableStateOf(0) }  // sube al cambiar una imagen: recarga miniaturas y visor
     var screen by remember { mutableStateOf<Screen>(Screen.Gallery) }
@@ -86,12 +88,12 @@ fun PicSwapRoot(store: SettingsStore, photoFiles: PhotoFiles) {
                 onDelete = { toDelete ->
                     toDelete.forEach { repo.remove(it); thumbCache.remove(it) }
                     ids = repo.ids()
-                    bgColors = bgColors - toDelete
+                    metas = metas - toDelete
                 },
                 onRemoveBackground = { screen = Screen.Editor(it) },
                 onRestoreOriginal = { id ->
                     repo.restoreOriginal(id)
-                    bgColors = bgColors - id
+                    metas = metas - id
                     thumbCache.remove(id)
                     imageVersion++
                 },
@@ -111,6 +113,9 @@ fun PicSwapRoot(store: SettingsStore, photoFiles: PhotoFiles) {
                     onBack = { screen = Screen.Gallery },
                     imageVersion = imageVersion,
                     drag = settings.drag,
+                    initialZoom = metas[s.id]?.zoom ?: 1f,
+                    initialPanX = metas[s.id]?.panX ?: 0f,
+                    initialPanY = metas[s.id]?.panY ?: 0f,
                     loadFull = loadFull,
                 )
             }
@@ -119,6 +124,7 @@ fun PicSwapRoot(store: SettingsStore, photoFiles: PhotoFiles) {
                 initialColor = settings.lastColor,
                 initialTolerance = settings.lastTolerance,
                 initialFeather = settings.lastFeather,
+                initialFeatherAmount = settings.lastFeatherAmount,
                 loadOriginal = { maxSize ->
                     withContext(Dispatchers.Default) { repo.bytes(s.id)?.let { decodeImage(it, maxSize) } }
                 },
@@ -128,11 +134,17 @@ fun PicSwapRoot(store: SettingsStore, photoFiles: PhotoFiles) {
                         repo.bytes(s.id)?.let { decodeImage(it, FULL_SIZE) }?.let { makeCutoutPng(it, params) }
                     }
                     if (png != null) {
-                        repo.saveCutout(s.id, png, params.color)
-                        bgColors = bgColors + (s.id to params.color)
+                        val meta = PhotoMeta(params.color, params.zoom, params.panX, params.panY)
+                        repo.saveCutout(s.id, png, meta)
+                        metas = metas + (s.id to meta)
                         thumbCache.remove(s.id)
                         imageVersion++
-                        settings = settings.copy(lastColor = params.color, lastTolerance = params.tolerance, lastFeather = params.feather)
+                        settings = settings.copy(
+                            lastColor = params.color,
+                            lastTolerance = params.tolerance,
+                            lastFeather = params.feather,
+                            lastFeatherAmount = params.featherAmount,
+                        )
                             .also(store::save)
                     }
                     screen = Screen.Gallery

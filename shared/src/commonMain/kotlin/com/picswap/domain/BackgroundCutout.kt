@@ -14,7 +14,9 @@ import kotlin.math.roundToInt
  *
  * @param tolerance 0 = desactivado (devuelve la imagen tal cual). Valores típicos: 25-60 (distancia RGB).
  * @param refColor color de fondo a retirar elegido con el cuentagotas; si es null se estima con los bordes.
- * @param feather desenfoque del borde (0-100): 0 = borde duro; más = transición más ancha y suave entre objeto y fondo.
+ * @param feather RANGO del desenfoque del borde (0-100): ancho de la franja, junto al borde, donde se suaviza el corte.
+ *   0 = borde duro. Solo afecta a esa franja: el resto de la imagen no se toca.
+ * @param featherAmount CANTIDAD de desenfoque (0-100) dentro de esa franja: 0 = borde duro, 100 = degradado completo.
  * @param seedIndex posición (índice del píxel) tocada con el cuentagotas: se parte también desde ahí, aunque no
  *   esté en el borde de la imagen.
  */
@@ -26,6 +28,7 @@ fun cutoutBackground(
     refColor: Int? = null,
     seedIndex: Int? = null,
     feather: Int = 10,
+    featherAmount: Int = 100,
 ): IntArray {
     if (tolerance <= 0 || width < 4 || height < 4) return argb
     val n = width * height
@@ -117,9 +120,13 @@ fun cutoutBackground(
 
     // --- 4. Desenfocar el borde: el radio es proporcional al tamaño de la imagen (así la vista previa y el
     //        resultado final se ven igual) y `feather` 0 deja el borde duro. ---
+    // `feather` (rango) = ancho en píxeles de la franja del borde donde se suaviza el corte (proporcional al tamaño de la
+    // imagen, para que la vista previa y el resultado final se vean igual). 0 = borde duro.
+    // `featherAmount` (cantidad) = cuánto se suaviza dentro de esa franja: 0 = borde duro, 100 = degradado completo.
     val radius = if (feather <= 0) 0 else maxOf(1, (feather / 100f * 0.012f * maxOf(width, height)).roundToInt())
+    val amount = featherAmount.coerceIn(0, 100)
     val out = IntArray(n)
-    if (radius == 0) {
+    if (radius == 0 || amount == 0) {
         for (i in 0 until n) if (hard[i] != 0) out[i] = (0xFF shl 24) or (argb[i] and 0x00FFFFFF)
         return out
     }
@@ -130,9 +137,9 @@ fun cutoutBackground(
         return r
     }
 
-    val alpha = blur(hard)
-    // Color de los píxeles de la transición: media de los píxeles de OBJETO cercanos. Si se dejara el color original,
-    // la transición se teñiría con el color del fondo viejo y aparecería un halo oscuro (o claro) alrededor del objeto.
+    val soft = blur(hard)
+    // Color de los píxeles que antes eran fondo y ahora forman parte de la transición: media de los píxeles de OBJETO
+    // cercanos. Si se dejara el color original, la transición se teñiría con el color del fondo viejo (halo).
     fun channel(shift: Int): IntArray {
         val c = IntArray(n) { if (hard[it] != 0) (argb[it] shr shift) and 0xFF else 0 }
         return blur(c)
@@ -141,12 +148,18 @@ fun cutoutBackground(
     val gB = channel(8)
     val bB = channel(0)
     for (i in 0 until n) {
-        val a = alpha[i]
-        if (a == 0) continue
-        val r = minOf(255, rB[i] * 255 / a)
-        val g = minOf(255, gB[i] * 255 / a)
-        val bl = minOf(255, bB[i] * 255 / a)
-        out[i] = (a shl 24) or (r shl 16) or (g shl 8) or bl
+        val alpha = hard[i] + (soft[i] - hard[i]) * amount / 100
+        if (alpha <= 0) continue
+        if (hard[i] != 0) {
+            // Píxel del objeto: conserva su color EXACTO (solo cambia su transparencia, y solo junto al borde).
+            out[i] = (alpha shl 24) or (argb[i] and 0x00FFFFFF)
+        } else {
+            val sf = soft[i]
+            val r = minOf(255, rB[i] * 255 / sf)
+            val g = minOf(255, gB[i] * 255 / sf)
+            val bl = minOf(255, bB[i] * 255 / sf)
+            out[i] = (alpha shl 24) or (r shl 16) or (g shl 8) or bl
+        }
     }
     return out
 }

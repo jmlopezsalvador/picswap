@@ -104,3 +104,29 @@ fun applyPinch(
         panY = newCy - centerY - ratio * (oldCy - centerY - panY),
     )
 }
+
+/** Posición relativa (0-1) dentro de la imagen del punto (x, y) de la pantalla, o null si cae fuera de la imagen. */
+fun screenToImage(
+    imgW: Int,
+    imgH: Int,
+    x: Float,
+    y: Float,
+    width: Float,
+    height: Float,
+    zoom: Float,
+    panX: Float,
+    panY: Float,
+): Pair<Float, Float>? {
+    if (zoom <= 0f || imgW <= 0 || imgH <= 0) return null
+    val s0 = min(width / imgW, height / imgH)
+    val left0 = (width - imgW * s0) / 2f
+    val top0 = (height - imgH * s0) / 2f
+    val cx = width / 2f
+    val cy = height / 2f
+    val qx = cx + (x - cx - panX) / zoom
+    val qy = cy + (y - cy - panY) / zoom
+    val fx = (qx - left0) / (imgW * s0)
+    val fy = (qy - top0) / (imgH * s0)
+    if (fx < 0f || fx > 1f || fy < 0f || fy > 1f) return null
+    return fx to fy
+}

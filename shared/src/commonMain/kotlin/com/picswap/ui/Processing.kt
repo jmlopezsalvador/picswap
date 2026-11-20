@@ -8,7 +8,9 @@ import com.picswap.domain.cutoutBackground
  * @param color color plano (ARGB) que se verá detrás del objeto.
  * @param tolerance 1-100.
  * @param refColor color a retirar elegido con el cuentagotas (null = se detecta con los bordes).
- * @param feather desenfoque del borde (0-100).
+ * @param feather rango del desenfoque del borde (0-100): ancho de la franja junto al borde donde se suaviza el corte.
+ * @param featherAmount cantidad de desenfoque (0-100) dentro de esa franja.
+ * @param zoom, panX, panY vista por defecto en el visor (zoom sobre el tamaño ajustado; desplazamiento en fracciones de pantalla).
  * @param seedX posición relativa (0-1) tocada con el cuentagotas; junto con `seedY`.
  */
 data class EditParams(
@@ -18,6 +20,10 @@ data class EditParams(
     val refColor: Int? = null,
     val seedX: Float? = null,
     val seedY: Float? = null,
+    val featherAmount: Int = 100,
+    val zoom: Float = 1f,
+    val panX: Float = 0f,
+    val panY: Float = 0f,
 )
 
 /** Lee los píxeles ARGB de una imagen. */
@@ -34,7 +40,7 @@ fun applyCutout(pixels: IntArray, width: Int, height: Int, params: EditParams): 
         val y = (params.seedY * height).toInt().coerceIn(0, height - 1)
         y * width + x
     } else null
-    return cutoutBackground(pixels, width, height, params.tolerance, params.refColor, seed, params.feather)
+    return cutoutBackground(pixels, width, height, params.tolerance, params.refColor, seed, params.feather, params.featherAmount)
 }
 
 /** Recorte de una imagen completa codificado como PNG con transparencia. Null si falla. */

@@ -205,8 +205,8 @@ private fun DrawScope.editorPanel(p: Ph, y0: Float) {
     // Cuentagotas
     drawCircle(Color(0xFF9AA0A6), p.w * 0.052f, Offset(p.x(0.9f), cy), style = Stroke(p.w * 0.01f))
     drawLine(Color.White, Offset(p.x(0.875f), cy + p.w * 0.025f), Offset(p.x(0.915f), cy - p.w * 0.02f), strokeWidth = p.w * 0.014f, cap = StrokeCap.Round)
-    // Deslizadores: tolerancia y desenfoque
-    for ((yf, v) in listOf((y0 + 0.13f) to 0.4f, (y0 + 0.195f) to 0.18f)) {
+    // Deslizadores: tolerancia, desenfoque (cantidad) y rango del borde
+    for ((yf, v) in listOf((y0 + 0.11f) to 0.4f, (y0 + 0.17f) to 0.7f, (y0 + 0.23f) to 0.18f)) {
         val ty = p.y(yf)
         drawRoundRect(Color(0xFF131314), Offset(p.x(0.12f), ty), Size(p.w * 0.76f, p.h * 0.012f), CornerRadius(p.h * 0.006f))
         drawRoundRect(Color(0xFF2BB35F), Offset(p.x(0.12f), ty), Size(p.w * 0.76f * v, p.h * 0.012f), CornerRadius(p.h * 0.006f))

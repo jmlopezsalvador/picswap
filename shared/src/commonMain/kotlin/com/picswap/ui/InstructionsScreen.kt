@@ -118,7 +118,9 @@ private val instructions = listOf(
                 listOf(
                     "Color: el color que se verá detrás del objeto. Hay cuatro colores predefinidos (se pueden cambiar en los ajustes ocultos) y un quinto botón, con forma de arcoíris, que abre una paleta para elegir un color solo para esta foto.",
                     "Tolerancia: cuánto fondo se retira. Con una tolerancia baja solo se quita el fondo muy parecido al color de referencia; con una alta se quita más. Si el fondo tiene sombras o luces irregulares, sube la tolerancia. Si empieza a comerse partes del objeto, bájala.",
-                    "Desenfoque: suaviza el borde entre el objeto y el fondo. Con 0 el corte es duro y puede notarse; con valores medios se disimula; con valores altos el borde queda muy difuminado. Pruébalo en directo hasta que no se aprecie el corte.",
+                    "Desenfoque (cantidad): cuánto se suaviza el corte entre el objeto y el fondo. Con 0 el corte es duro y puede notarse; con valores altos el borde se difumina mucho. Solo afecta al borde del recorte: el resto del objeto no se toca y se queda nítido.",
+                    "Rango del borde: el ancho de la franja, junto al borde, en la que se aplica ese desenfoque. Con un rango pequeño solo se suaviza la línea del corte; con uno grande, una franja más ancha. Juega con los dos deslizadores (cantidad y rango) hasta que no se aprecie el corte.",
+                    "Tamaño de la foto: pellizca con dos dedos sobre la vista previa para acercar o alejar la imagen, y arrástrala para colocarla. El recuadro marcado con una línea fina es la pantalla del visor, así que lo que ves es lo que saldrá. Esa será la vista con la que se abra la foto. «Restablecer tamaño» la devuelve a como estaba.",
                     "Cuentagotas: normalmente la app detecta el fondo por sí sola mirando los bordes de la foto. Si falla, activa el cuentagotas y toca en una zona del fondo: ese es el color que se quitará, y se parte desde ese punto. Verás un aro donde tocaste. Con «Volver a automático» recuperas la detección normal.",
                     "Guardar: aplica el recorte a la foto. Con la flecha de atrás sales sin cambios.",
                 ),
@@ -151,7 +153,7 @@ private val instructions = listOf(
             Item.P(
                 "Para ajustar el tamaño del objeto antes del efecto, pellizca con dos dedos sobre el objeto: hacia fuera para " +
                     "acercar y hacia dentro para alejar. También puedes moverlo con los dos dedos. La imagen se queda con el zoom con " +
-                    "el que la sueltes. Los dos dedos deben empezar sobre el objeto.",
+                    "el que la sueltes. Los dos dedos deben empezar sobre el objeto. La foto se abre siempre con el tamaño y la posición que dejaste en el editor.",
             ),
             Item.Pic(Art.Pinch, "Pellizco con dos dedos sobre el objeto."),
         ),

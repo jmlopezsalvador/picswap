@@ -76,11 +76,15 @@ Plataformas: Android + iOS (un único código). Solo vertical. Idioma: español.
 - R13. **Color** de relleno elegido por foto: los 4 predefinidos de los ajustes (R6) y un **quinto botón** que abre
   una paleta para elegir un color solo para esa foto. Se propone el último usado.
 - R14. **Tolerancia** (1-100) ajustable en directo; se propone la última usada.
-- R14b. **Desenfoque del borde** (deslizador 0-100, por defecto 10; se propone el último usado): suaviza la
-  transición entre el objeto y el fondo para que no se note el corte. 0 = borde duro. El radio es proporcional al
-  tamaño de la imagen (la vista previa y el resultado final se ven igual). Los píxeles de la transición toman el color
-  del objeto, no el del fondo viejo (así no aparece un halo). Primera versión como deslizador; si el uso real lo pide,
-  se convertirá en presets (suave / medio / alto).
+- R14b. **Desenfoque del borde**, con dos deslizadores (0-100) que solo afectan a la franja del borde del recorte:
+  **Desenfoque** (cantidad: 0 = borde duro, 100 = degradado completo) y **Rango del borde** (ancho de la franja junto al
+  borde donde se aplica; por defecto 10; proporcional al tamaño de la imagen, así la vista previa y el resultado final
+  se ven igual). El resto de la imagen NO se toca: los píxeles del objeto conservan su color exacto y los de la
+  transición toman el color del objeto, no el del fondo viejo (sin halo). Se proponen los últimos valores usados.
+- R14c. **Tamaño de la foto (zoom)**: en el editor se puede pellizcar (y arrastrar) la vista previa para ajustar el
+  tamaño y la posición. El recuadro simula la pantalla del visor (línea fina), así que es WYSIWYG. Se guarda por foto
+  (zoom y posición en fracciones de pantalla, en el fichero `.bg`) y es la vista con la que se abre la foto en el visor.
+  «Restablecer tamaño» la devuelve a como estaba. El cuentagotas sigue funcionando con zoom.
 - R15. **Cuentagotas**: al activarlo y tocar una zona de la foto, ese color (media de 5 × 5 píxeles) es el fondo a
   retirar, y se parte también desde ese punto; hay un enlace para volver a la detección automática por los bordes.
 - R16. Algoritmo propio en `commonMain` (`domain/BackgroundCutout.kt`): inundación desde los bordes por similitud de

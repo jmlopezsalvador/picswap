@@ -70,7 +70,8 @@ private val guideSteps = listOf(
     GuideStep(
         "4. Quita el fondo",
         "En el editor ves el resultado en directo. Elige el color del fondo, ajusta la tolerancia (cuánto fondo se retira) y " +
-            "el desenfoque del borde (para que no se note el corte). Con el cuentagotas tocas en el fondo para decir cuál quitar.",
+            "el desenfoque del borde (para que no se note el corte). Con el cuentagotas tocas en el fondo para decir cuál quitar, " +
+            "y pellizcando dejas el objeto del tamaño que quieras.",
         Art.Editor,
     ),
     GuideStep(

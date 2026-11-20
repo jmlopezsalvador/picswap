@@ -69,4 +69,15 @@ class PhotoRepositoryTest {
         repo.remove(id)
         assertEquals(0, files.m.size)
     }
+
+    @Test fun metaKeepsTheDefaultViewAndOldFilesStillLoad() {
+        val files = MemoryFiles()
+        val repo = PhotoRepository(files, { 9L })
+        val id = repo.add(byteArrayOf(1))
+        repo.saveCutout(id, byteArrayOf(2), com.picswap.domain.PhotoMeta(0xFF00B140L, 2.5f, 0.1f, -0.2f))
+        assertEquals(com.picswap.domain.PhotoMeta(0xFF00B140L, 2.5f, 0.1f, -0.2f), repo.metas()[id])
+        // Un fichero del formato antiguo (solo el color) sigue valiendo, con la vista normal.
+        files.write(id.removeSuffix(".jpg") + ".bg", "4278190080".encodeToByteArray())
+        assertEquals(com.picswap.domain.PhotoMeta(0xFF000000L), repo.metas()[id])
+    }
 }

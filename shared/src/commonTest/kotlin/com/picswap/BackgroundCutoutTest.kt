@@ -103,4 +103,34 @@ class BackgroundCutoutTest {
             assertTrue(red > 200, "el color de la transición debe ser el del objeto, no el del fondo: R=$red")
         }
     }
+
+    @Test fun interiorPixelsKeepTheirExactColorEvenWithMaximumBlur() {
+        val px = scene()
+        px[80 * w + 60] = 0xFFFF0000.toInt()   // un píxel rojo bien dentro del objeto
+        px[70 * w + 50] = 0xFF123456.toInt()
+        val out = cutoutBackground(px, w, h, 40, feather = 100, featherAmount = 100)
+        assertEquals(0xFFFF0000.toInt(), out[80 * w + 60])
+        assertEquals(0xFF123456.toInt(), out[70 * w + 50])
+        // y todo el interior del objeto sigue exactamente igual
+        assertEquals(0xFFECE6D7.toInt(), out[90 * w + 70])
+    }
+
+    @Test fun amountZeroKeepsAHardEdgeEvenWithAWideRange() {
+        val out = cutoutBackground(scene(), w, h, 40, feather = 100, featherAmount = 0)
+        assertEquals(0, partialPixels(out, 80, 20, 50))
+    }
+
+    @Test fun moreAmountSoftensMoreWithinTheSameRange() {
+        val low = alpha(cutoutBackground(scene(), w, h, 40, feather = 60, featherAmount = 25), 35, 80)
+        val high = alpha(cutoutBackground(scene(), w, h, 40, feather = 60, featherAmount = 100), 35, 80)
+        assertTrue(high > low, "con más cantidad, el borde exterior es más visible: $high > $low")
+    }
+
+    @Test fun theBlurStaysNearTheEdge() {
+        // Lejos del borde no debe haber nada semitransparente, por mucho rango que se use.
+        val out = cutoutBackground(scene(), w, h, 40, feather = 100, featherAmount = 100)
+        assertEquals(0, alpha(out, 5, 120))
+        assertEquals(0, alpha(out, 110, 150))
+        assertEquals(255, alpha(out, 60, 80))
+    }
 }

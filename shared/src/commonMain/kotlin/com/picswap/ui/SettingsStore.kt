@@ -28,6 +28,7 @@ data class AppSettings(
     val lastColor: Long = 0xFF000000L,
     val lastTolerance: Int = 40,
     val lastFeather: Int = 10,
+    val lastFeatherAmount: Int = 100,
     /** Mostrar la guía de inicio al abrir la app. */
     val showGuide: Boolean = true,
     /** Mostrar los consejos antes de hacer una foto con la cámara. */
@@ -45,6 +46,7 @@ class SettingsStore(private val prefs: KeyValueStore) {
         lastColor = prefs.getLong("bgColor", 0xFF000000L),
         lastTolerance = prefs.getLong("tolerance", 40L).toInt(),
         lastFeather = prefs.getLong("feather", 10L).toInt(),
+        lastFeatherAmount = prefs.getLong("featherAmount", 100L).toInt(),
         showGuide = prefs.getBoolean("showGuide", true),
         showPhotoTips = prefs.getBoolean("photoTips", true),
     )
@@ -57,6 +59,7 @@ class SettingsStore(private val prefs: KeyValueStore) {
         prefs.putLong("bgColor", s.lastColor)
         prefs.putLong("tolerance", s.lastTolerance.toLong())
         prefs.putLong("feather", s.lastFeather.toLong())
+        prefs.putLong("featherAmount", s.lastFeatherAmount.toLong())
         prefs.putBoolean("showGuide", s.showGuide)
         prefs.putBoolean("photoTips", s.showPhotoTips)
     }

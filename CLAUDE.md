@@ -41,7 +41,7 @@ el fondo plano, como si lo hubiera sacado del móvil. Detalle completo en `docs/
   arrastre libre en cualquier dirección que deja solo el color de fondo de la foto.
 - Ajustes ocultos: pulsación larga en la esquina superior derecha de la galería: 4 colores de fondo editables (paleta), modo de arrastre (arrastrar y soltar [en cualquier momento / solo en el borde] o acompañar) y créditos de Wikicode.
 - Antes de abrir la cámara sale un aviso con consejos para la foto (superficie lisa, color distinto al objeto, luz uniforme); se puede desactivar.
-- Editor: tolerancia y desenfoque del borde (deslizadores), cuentagotas y los 4 colores vienen de los ajustes + un quinto botón con paleta para un color solo de esa foto.
+- Editor: tolerancia, desenfoque del borde (cantidad + rango, solo en la franja del borde), zoom/posición de la foto (se guarda por foto y es la vista inicial del visor), cuentagotas y los 4 colores vienen de los ajustes + un quinto botón con paleta para un color solo de esa foto.
 - Paquete `com.picswap`. Repo: https://github.com/jmlopezsalvador/picswap.git. Icono en `data/icon.png` (ya aplicado a Android e iOS; se regeneró con un script de Pillow).
 
 ## Reglas de código para que compile en iOS
@@ -93,11 +93,15 @@ misma tarea en que se cambie una función** (textos y dibujos).
 - **Zoom y arrastre solo sobre el objeto hechos (Android parcialmente verificado):** el arrastre desde la transparencia se
   ignora y desde el objeto funciona (probado en emulador). El **pellizco NO se pudo probar en el emulador** (ni `sendevent`
   ni `adb emu event send` mueven el táctil): solo hay tests unitarios (`domain/ZoomAndHit.kt`) y revisión del código
-  (`ViewerScreen.kt`). Probar en un móvil real. El toque simple usa `tapWithoutDrag` (un arrastre no cuenta como toque).
+  (`ViewerScreen.kt`). Probar en un móvil real. El toque simple usa `tapWithoutDrag` (un arrastre no cuenta como toque). El bucle de gestos de `ViewerScreen.kt` dura mientras haya CUALQUIER dedo apoyado (p. ej. el que sujeta el móvil), así que el estado de arrastre/pellizco se reinicia cuando no queda ningún dedo sobre el objeto (fallo corregido: tras soltar el objeto no se podía volver a mover). No se pudo reproducir con dos dedos en el emulador.
 - **Desenfoque, guía de inicio e instrucciones hechos (Android verificado):** deslizador de desenfoque en el editor
   (`feather` en `domain/BackgroundCutout.kt`, con tests y corrección del halo), guía de inicio al abrir la app, página de
   instrucciones y ajustes de ayuda (interruptor de la guía). Falta probar en iPhone (código común, sin cambios de plataforma).
 - **Consejos de foto hechos (Android verificado):** aviso antes de la cámara (`GalleryScreen.kt`), paso nuevo en la guía y bloque
   «Cómo hacer una buena foto» en las instrucciones; ajuste `showPhotoTips`.
+- **Desenfoque solo en el borde + zoom en el editor hechos (Android verificado):** `feather` (rango) y `featherAmount` (cantidad) en
+  `BackgroundCutout.kt` (los píxeles del objeto conservan su color exacto: fallo corregido, antes se desenfocaba toda la imagen);
+  el editor simula la pantalla del visor para que el zoom/posición guardados (`PhotoMeta` en `.bg`) coincidan con el visor.
+  El pellizco del editor no se pudo probar (sí el arrastre con un dedo, que usa la misma lógica).
 - **Siguiente:** validar con fotos reales del usuario; si no basta el recorte, segunda foto o IA (fase 3). Ajustar umbrales
   del arrastre tras probar en móvil. Probar el pellizco en un móvil real.

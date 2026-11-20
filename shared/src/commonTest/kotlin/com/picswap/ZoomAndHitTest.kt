@@ -102,4 +102,15 @@ class ZoomAndHitTest {
         assertTrue(small.left + t.dx >= sw)
         assertTrue(abs(t.dy) < 0.001f)
     }
+
+    @Test fun screenToImageMapsTheCenterAndRespectsZoomAndPan() {
+        val c = assertNotNull(com.picswap.domain.screenToImage(imgW, imgH, 500f, 1000f, sw, sh, 1f, 0f, 0f))
+        assertEquals(0.5f, c.first, 0.001f)
+        assertEquals(0.5f, c.second, 0.001f)
+        // Con zoom 2 centrado, un punto 250 px a la derecha del centro está a 1/8 de la imagen del centro: 0,5 + 0,125
+        val z = assertNotNull(com.picswap.domain.screenToImage(imgW, imgH, 750f, 1000f, sw, sh, 2f, 0f, 0f))
+        assertEquals(0.625f, z.first, 0.001f)
+        // Fuera de la imagen (franja de arriba) no hay punto.
+        assertEquals(null, com.picswap.domain.screenToImage(imgW, imgH, 500f, 100f, sw, sh, 1f, 0f, 0f))
+    }
 }

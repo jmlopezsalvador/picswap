@@ -75,6 +75,9 @@ fun ViewerScreen(
     onBack: () -> Unit,
     imageVersion: Int,
     drag: DragSettings,
+    initialZoom: Float = 1f,
+    initialPanX: Float = 0f,
+    initialPanY: Float = 0f,
     loadFull: suspend (String) -> ImageBitmap?,
 ) {
     val image by produceState<ImageBitmap?>(null, id, imageVersion) { value = loadFull(id) }
@@ -87,8 +90,6 @@ fun ViewerScreen(
         }
     }
     var offset by remember { mutableStateOf(Offset.Zero) }   // desplazamiento del arrastre (el swap)
-    var zoom by remember(id) { mutableStateOf(1f) }          // zoom con pellizco: se queda como lo dejes
-    var pan by remember(id) { mutableStateOf(Offset.Zero) }  // desplazamiento al hacer zoom con dos dedos
     var gone by remember { mutableStateOf(false) }
     var animating by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -96,6 +97,10 @@ fun ViewerScreen(
     BoxWithConstraints(Modifier.fillMaxSize().background(bgColor)) {
         val widthPx = constraints.maxWidth.toFloat()
         val heightPx = constraints.maxHeight.toFloat()
+        // Vista de partida: la que se dejó guardada en el editor (zoom y posición). Con el pellizco se puede ajustar al
+        // momento, pero al volver a abrir la foto vuelve a la guardada.
+        var zoom by remember(id) { mutableStateOf(initialZoom) }
+        var pan by remember(id) { mutableStateOf(Offset(initialPanX * widthPx, initialPanY * heightPx)) }
         val minDragPx = with(LocalDensity.current) { 12.dp.toPx() }
 
         if (!gone) {
@@ -171,8 +176,10 @@ fun ViewerScreen(
 
                     awaitEachGesture {
                         val first = awaitFirstDown(requireUnconsumed = false)
-                        if (animating) return@awaitEachGesture
 
+                        // Este bloque dura mientras haya algun dedo apoyado (por ejemplo, el que sujeta el movil sobre
+                        // la transparencia). Por eso el estado del arrastre y del pellizco se reinicia cada vez que no
+                        // queda ningun dedo sobre el objeto: asi se puede mover y soltar el objeto cuantas veces se quiera.
                         val active = ArrayList<PointerId>()  // dedos que empezaron sobre el objeto
                         var swapId: PointerId? = null        // el dedo que hace el arrastre
                         var swapStart = Offset.Zero
@@ -189,6 +196,7 @@ fun ViewerScreen(
                         }
 
                         fun register(c: PointerInputChange) {
+                            if (animating) return                 // el objeto se esta recolocando: este dedo no cuenta
                             if (!hitsObject(c.position)) return  // dedo sobre la transparencia: se ignora
                             if (active.isNotEmpty()) {
                                 pinched = true
@@ -221,6 +229,13 @@ fun ViewerScreen(
                                     }
                                     active.remove(c.id)
                                 }
+                            }
+                            // Sin dedos sobre el objeto: se empieza de cero aunque otro dedo siga apoyado en la transparencia.
+                            if (active.isEmpty()) {
+                                pinched = false
+                                released = false
+                                swapId = null
+                                origin = null
                             }
 
                             val act = event.changes.filter { it.id in active && it.pressed }
